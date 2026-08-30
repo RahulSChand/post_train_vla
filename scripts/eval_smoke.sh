@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OPENPI_ROOT="${OPENPI_ROOT:-/home/ubuntu/openpi}"
+OPENPI_ROOT="${OPENPI_ROOT:-/home/ubuntu/openpi_easy}"
 POST_VLA_ROOT="${POST_VLA_ROOT:-/home/ubuntu/post_train_vla}"
 
 cd "$OPENPI_ROOT"
@@ -13,4 +13,3 @@ PYTHONPATH="$POST_VLA_ROOT/src:$OPENPI_ROOT/third_party/libero${PYTHONPATH:+:$PY
   --episodes-per-task 1 \
   --output-dir "$POST_VLA_ROOT/outputs/smoke" \
   "$@"
-

@@ -45,7 +45,7 @@ requirements already supply the evaluator dependencies:
 
 ```bash
 cd /home/ubuntu/post_train_vla
-uv pip install --python /home/ubuntu/openpi/examples/libero/.venv/bin/python --no-deps -e .
+uv pip install --python /home/ubuntu/openpi_easy/examples/libero/.venv/bin/python --no-deps -e .
 ```
 
 Run one smoke episode in another terminal:

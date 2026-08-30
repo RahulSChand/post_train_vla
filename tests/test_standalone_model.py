@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import pathlib
 import sys
 
@@ -27,10 +28,11 @@ def _tiny_config(*, use_adarms=False):
 
 
 def _load_openpi_reference_module():
-    source = (
-        pathlib.Path(__file__).parents[2]
-        / "openpi/src/openpi/models_pytorch/transformers_replace/models/gemma/modeling_gemma.py"
-    )
+    workspace = pathlib.Path(__file__).parents[2]
+    openpi_root = pathlib.Path(os.environ.get("OPENPI_ROOT", workspace / "openpi_easy"))
+    source = openpi_root / "src/openpi/models_pytorch/transformers_replace/models/gemma/modeling_gemma.py"
+    if not source.is_file():
+        raise FileNotFoundError(f"OpenPI reference implementation not found at {source}")
     name = "transformers.models.gemma._openpi_reference_modeling_gemma"
     spec = importlib.util.spec_from_file_location(name, source)
     module = importlib.util.module_from_spec(spec)
