@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "post-train-vla"
+version = "0.1.0"
+description = "Minimal PyTorch policy server and LIBERO evaluator for pi0/pi0.5"
+requires-python = ">=3.8"
+dependencies = [
+    "imageio[ffmpeg]>=2.34",
+    "msgpack>=1.0.5",
+    "numpy>=1.22.4,<2.0.0",
+    "pillow>=9.0",
+    "tqdm>=4.64",
+    "websockets>=11,<16",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+model = [
+    "safetensors>=0.4.5",
+    "sentencepiece>=0.2.0",
+    "torch==2.7.1; python_version >= '3.9'",
+    "transformers==4.53.2; python_version >= '3.9'",
+]
+
+[project.scripts]
+post-vla-eval-libero = "post_train_vla.eval_libero:main"
+post-vla-serve-torch = "post_train_vla.serve_torch:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/post_train_vla"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
