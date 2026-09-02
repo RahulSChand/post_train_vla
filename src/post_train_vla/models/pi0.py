@@ -105,6 +105,66 @@ class Pi0(nn.Module):
     def _mask_to_4d(mask: torch.Tensor) -> torch.Tensor:
         return torch.where(mask[:, None, :, :], 0.0, -2.3819763e38)
 
+    def loss(
+        self,
+        observation: Observation,
+        actions: torch.Tensor,
+        *,
+        noise: torch.Tensor | None = None,
+        time: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Compute the per-action flow-matching loss used for fine-tuning.
+
+        ``actions`` must already be normalized and have shape
+        ``[batch, action_horizon, action_dim]``. Unlike ``sample_actions``,
+        this path is gradient-enabled and is intended for training.
+        """
+        observation = preprocess_observation(observation)
+        batch = observation.state.shape[0]
+        if actions.ndim != 3 or actions.shape[0] != batch:
+            raise ValueError(f"Expected actions [batch, horizon, dim], got {tuple(actions.shape)}")
+        if actions.shape[1:] != (self.config.action_horizon, self.config.action_dim):
+            raise ValueError(
+                "Action shape does not match model config: "
+                f"expected {(self.config.action_horizon, self.config.action_dim)}, got {tuple(actions.shape[1:])}"
+            )
+        if noise is None:
+            noise = torch.randn_like(actions)
+        if time is None:
+            # Match OpenPI's Beta(1.5, 1.0) timestep sampling.
+            time = torch.distributions.Beta(1.5, 1.0).sample((batch,)).to(actions.device)
+            time = time * 0.999 + 0.001
+        time = time.to(device=actions.device, dtype=torch.float32)
+        x_t = time[:, None, None] * noise + (1.0 - time[:, None, None]) * actions
+        target_velocity = noise - actions
+
+        prefix, prefix_padding, prefix_ar = self._embed_prefix(observation)
+        suffix, suffix_padding, suffix_ar, condition = self._embed_suffix(observation.state, x_t, time)
+        # The pretrained backbone runs mostly in bfloat16 while a few stability-
+        # sensitive parameters remain float32. Match OpenPI's training path by
+        # casting the two embedding streams at the joint-attention boundary.
+        attention_weight = self.paligemma_with_expert.paligemma.model.language_model.layers[0].self_attn.q_proj.weight
+        if attention_weight.dtype == torch.bfloat16:
+            prefix = prefix.to(torch.bfloat16)
+            suffix = suffix.to(torch.bfloat16)
+        padding = torch.cat([prefix_padding, suffix_padding], dim=1)
+        attention = self._mask_to_4d(make_attention_masks(
+            padding, torch.cat([prefix_ar, suffix_ar], dim=1)
+        ))
+        positions = torch.cumsum(padding, dim=1) - 1
+        outputs, _ = self.paligemma_with_expert(
+            attention_mask=attention,
+            position_ids=positions,
+            past_key_values=None,
+            inputs_embeds=[prefix, suffix],
+            use_cache=False,
+            adarms_cond=[None, condition],
+        )
+        predicted_velocity = self.action_out_proj(
+            outputs[1][:, -self.config.action_horizon:].float()
+        )
+        return functional.mse_loss(predicted_velocity, target_velocity.float(), reduction="none")
+
     @torch.no_grad()
     def sample_actions(
         self,

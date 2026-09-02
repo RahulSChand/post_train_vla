@@ -38,6 +38,28 @@ cd /home/ubuntu/post_train_vla
 Pass `--compile` only after ordinary eager inference works. For pi0.5, use a matching converted checkpoint and
 `--model pi05`.
 
+## Fine-tuning on LIBERO LeRobot data
+
+The minimal trainer uses the same LeRobot field layout as OpenPI's LIBERO converter: `image`, `wrist_image`,
+`state`, `action`, and `task_index`. It saves standalone checkpoints which can be served and evaluated by this
+repository directly.
+
+```bash
+cd /home/ubuntu/post_train_vla
+uv sync --extra model --extra train
+.venv/bin/post-vla-finetune \
+  --checkpoint /home/ubuntu/.cache/openpi/openpi-assets/checkpoints/pi0_libero_pytorch \
+  --tokenizer assets/paligemma_tokenizer.model \
+  --dataset-repo physical-intelligence/libero \
+  --output-dir outputs/finetune \
+  --steps 1000 --batch-size 1
+```
+
+Start with `--heads-only` when validating a new dataset or using limited GPU memory. A completed checkpoint is
+stored at `outputs/finetune/<step>/` and can replace `--checkpoint` for `post-vla-serve-torch`.
+For pi0, the trainer matches OpenPI's legacy LIBERO configuration by converting the first six action dimensions to
+state-relative deltas; pass `--no-extra-delta-actions` only if your dataset already stores those deltas.
+
 ## LIBERO environment
 
 Install this package without dependencies into the existing LIBERO Python 3.8 environment; its locked LIBERO
