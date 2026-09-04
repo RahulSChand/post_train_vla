@@ -35,6 +35,7 @@ class EvalConfig:
     suite: str = "libero_spatial"
     task_ids: tuple[int, ...] | None = None
     episodes_per_task: int = 50
+    episode_offset: int = 0
     seed: int = 7
     wait_steps: int = 10
     replan_steps: int = 5
@@ -93,6 +94,8 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
         raise ValueError(f"Unknown suite {config.suite!r}; choose from {sorted(MAX_STEPS)}")
     if config.episodes_per_task < 1:
         raise ValueError("episodes_per_task must be positive")
+    if config.episode_offset < 0:
+        raise ValueError("episode_offset must be non-negative")
 
     np.random.seed(config.seed)
     config.output_dir.mkdir(parents=True, exist_ok=True)
@@ -111,14 +114,18 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
         task = suite.get_task(task_id)
         prompt = str(task.language)
         initial_states = suite.get_task_init_states(task_id)
-        if config.episodes_per_task > len(initial_states):
+        episode_end = config.episode_offset + config.episodes_per_task
+        if episode_end > len(initial_states):
             raise ValueError(
-                f"Requested {config.episodes_per_task} episodes but task {task_id} only has {len(initial_states)} states"
+                f"Requested initial states [{config.episode_offset}, {episode_end}) but task {task_id} "
+                f"only has {len(initial_states)} states"
             )
 
         environment = _create_environment(task, config.render_resolution, config.seed)
         try:
-            for episode_index in tqdm(range(config.episodes_per_task), desc=f"task {task_id}", leave=False):
+            for episode_index in tqdm(
+                range(config.episode_offset, episode_end), desc=f"task {task_id}", leave=False
+            ):
                 started_at = time.monotonic()
                 success = False
                 error = None

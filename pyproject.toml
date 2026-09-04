@@ -26,6 +26,8 @@ model = [
 ]
 train = [
     "lerobot",
+    "pyarrow",
+    "wandb",
 ]
 
 [project.scripts]

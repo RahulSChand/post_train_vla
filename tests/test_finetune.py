@@ -1,8 +1,10 @@
 import json
+import pathlib
 
 import numpy as np
 import torch
 
+import post_train_vla.finetune as finetune
 from post_train_vla.finetune import save_checkpoint
 from post_train_vla.models.configuration import Pi0Config
 from post_train_vla.transforms import LiberoTransforms
@@ -53,3 +55,67 @@ def test_save_checkpoint_preserves_standalone_runtime_assets(tmp_path):
     assert (checkpoint / "optimizer.pt").is_file()
     assert (checkpoint / "config.json").is_file()
     assert (checkpoint / "assets" / "physical-intelligence" / "libero" / "norm_stats.json").is_file()
+
+
+def test_evaluate_checkpoint_runs_separate_libero_environment(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    tokenizer = tmp_path / "tokenizer.model"
+    tokenizer.touch()
+    eval_python = tmp_path / "libero-python"
+    eval_python.touch()
+    openpi_root = tmp_path / "openpi"
+    openpi_root.mkdir()
+    calls = {}
+
+    class FakeServer:
+        def terminate(self):
+            calls["terminated"] = True
+
+        def wait(self, timeout=None):
+            calls["wait_timeout"] = timeout
+            return 0
+
+    def fake_popen(command, **kwargs):
+        calls["server_command"] = command
+        calls["server_kwargs"] = kwargs
+        return FakeServer()
+
+    def fake_run(command, **kwargs):
+        calls["evaluator_command"] = command
+        calls["evaluator_kwargs"] = kwargs
+        evaluation_dir = pathlib.Path(command[command.index("--output-dir") + 1])
+        evaluation_dir.mkdir(parents=True)
+        (evaluation_dir / "summary.json").write_text(
+            json.dumps({"success_rate": 0.75, "successes": 15, "episodes": 20})
+        )
+
+    monkeypatch.setattr(finetune.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(finetune.subprocess, "run", fake_run)
+    monkeypatch.setattr(finetune, "_wait_for_server", lambda *args: None)
+
+    summary = finetune.evaluate_checkpoint(
+        checkpoint,
+        tokenizer,
+        500,
+        tmp_path / "training",
+        eval_python=eval_python,
+        openpi_root=openpi_root,
+        suite="libero_spatial",
+        task_id=0,
+        episodes=20,
+        save_video=True,
+        port=8123,
+        server_timeout=60,
+        device="cuda",
+        pi05=False,
+    )
+
+    assert summary["success_rate"] == 0.75
+    assert calls["terminated"]
+    assert calls["evaluator_command"][0] == str(eval_python)
+    assert "--save-video" in calls["evaluator_command"]
+    evaluation_dir = calls["evaluator_command"][calls["evaluator_command"].index("--output-dir") + 1]
+    assert pathlib.Path(evaluation_dir).is_absolute()
+    assert calls["evaluator_command"][calls["evaluator_command"].index("--episodes-per-task") + 1] == "20"
+    assert calls["server_command"][calls["server_command"].index("--port") + 1] == "8123"

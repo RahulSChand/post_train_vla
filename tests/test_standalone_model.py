@@ -9,6 +9,7 @@ from transformers.models.gemma import modeling_gemma
 
 from post_train_vla.models.configuration import Pi0Config
 from post_train_vla.models.gemma import PiGemmaModel, PiGemmaRMSNorm
+from post_train_vla.models.paligemma_expert import _flatten_attention_heads
 
 
 def _tiny_config(*, use_adarms=False):
@@ -44,6 +45,15 @@ def _load_openpi_reference_module():
 def test_import_does_not_patch_transformers():
     assert modeling_gemma.GemmaModel is not PiGemmaModel
     assert modeling_gemma.GemmaRMSNorm is not PiGemmaRMSNorm
+
+
+def test_flatten_attention_heads_preserves_sequence_order():
+    attention = torch.arange(2 * 3 * 4 * 5).reshape(2, 3, 4, 5)
+
+    flattened = _flatten_attention_heads(attention)
+
+    assert flattened.shape == (2, 3, 20)
+    torch.testing.assert_close(flattened[1, 2], attention[1, 2].reshape(-1))
 
 
 def test_adaptive_rms_norm_parameter_contract():

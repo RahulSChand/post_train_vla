@@ -14,10 +14,25 @@ from transformers.models.auto import CONFIG_MAPPING
 from transformers.models.gemma import modeling_gemma
 
 from post_train_vla.models.configuration import GemmaConfig
-from post_train_vla.models.gemma import PiGemmaModel
+from post_train_vla.models.gemma import PiGemmaModel, _gated_residual
 from post_train_vla.models.vision import embed_image_without_hf_scaling, install_pi_vision_forward
 
 VOCAB_SIZE = 257_152
+
+
+def _flatten_attention_heads(attention: torch.Tensor) -> torch.Tensor:
+    """Flatten an eager-attention output without changing token order.
+
+    Transformers' ``eager_attention_forward`` already returns attention in
+    ``[batch, sequence, heads, head_dim]`` order.  The output projection
+    expects the final two dimensions flattened to ``hidden_size``.
+    """
+    if attention.ndim != 4:
+        raise ValueError(
+            f"Expected attention [batch, sequence, heads, head_dim], got {tuple(attention.shape)}"
+        )
+    batch, sequence, heads, head_dim = attention.shape
+    return attention.reshape(batch, sequence, heads * head_dim)
 
 
 def _make_gemma_config(config: GemmaConfig, *, use_adarms: bool):
@@ -173,7 +188,7 @@ class PaliGemmaWithExpert(nn.Module):
                 attention_mask,
                 models[0].layers[layer_index].self_attn.scaling,
             )
-            attention = attention.transpose(1, 2).contiguous().reshape(attention.shape[0], -1, query.shape[1] * query.shape[-1])
+            attention = _flatten_attention_heads(attention)
 
             next_states, start = [], 0
             for model, states, gate, condition in zip(models, hidden_states, gates, conditions, strict=True):
@@ -181,12 +196,12 @@ class PaliGemmaWithExpert(nn.Module):
                 end = start + states.shape[1]
                 layer_attention = attention[:, start:end].to(layer.self_attn.o_proj.weight.dtype)
                 output = layer.self_attn.o_proj(layer_attention)
-                output = modeling_gemma._gated_residual(states, output, gate)
+                output = _gated_residual(states, output, gate)
                 residual = output
                 output, gate = layer.post_attention_layernorm(output, condition)
                 output = output.to(layer.mlp.up_proj.weight.dtype)
                 output = layer.mlp(output)
-                next_states.append(modeling_gemma._gated_residual(residual, output, gate))
+                next_states.append(_gated_residual(residual, output, gate))
                 start = end
             hidden_states = next_states
 

@@ -55,6 +55,23 @@ uv sync --extra model --extra train
   --steps 1000 --batch-size 1
 ```
 
+For a local LeRobot dataset, pass its directory directly to `--dataset-repo`, for example
+`--dataset-repo /home/ubuntu/.cache/huggingface/lerobot/libero_spatial`.
+
+Training metrics are logged to the `chandrahul0320/post_vla` Weights & Biases project by default. Disable logging
+with `--no-wandb`. Checkpoints are saved every 3000 steps by default; override with `--save-every` if needed.
+
+To evaluate a saved checkpoint on 20 task-0 episodes every 500 training steps, record every rollout, and log the
+success rate to the same W&B run, add:
+
+```bash
+--eval-every 500 --eval-episodes 20 --eval-task-id 0 --eval-save-video
+```
+
+Each evaluation is stored under `OUTPUT_DIR/eval/step_NNNNNN/`; its `videos/` directory contains the 20 MP4s and
+`summary.json` contains the aggregate result. Evaluation pauses training while it runs and requires the prepared
+LIBERO Python 3.8 environment under `/home/ubuntu/openpi_easy/examples/libero/.venv`.
+
 Start with `--heads-only` when validating a new dataset or using limited GPU memory. A completed checkpoint is
 stored at `outputs/finetune/<step>/` and can replace `--checkpoint` for `post-vla-serve-torch`.
 For pi0, the trainer matches OpenPI's legacy LIBERO configuration by converting the first six action dimensions to

@@ -14,6 +14,7 @@ def _parse_args():
     parser.add_argument("--suite", default="libero_spatial")
     parser.add_argument("--task-id", type=int, action="append", dest="task_ids")
     parser.add_argument("--episodes-per-task", type=int, default=50)
+    parser.add_argument("--episode-offset", type=int, default=0)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--wait-steps", type=int, default=10)
     parser.add_argument("--replan-steps", type=int, default=5)
@@ -32,6 +33,7 @@ def main() -> None:
         suite=args.suite,
         task_ids=tuple(args.task_ids) if args.task_ids else None,
         episodes_per_task=args.episodes_per_task,
+        episode_offset=args.episode_offset,
         seed=args.seed,
         wait_steps=args.wait_steps,
         replan_steps=args.replan_steps,
