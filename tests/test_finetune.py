@@ -57,6 +57,22 @@ def test_save_checkpoint_preserves_standalone_runtime_assets(tmp_path):
     assert (checkpoint / "assets" / "physical-intelligence" / "libero" / "norm_stats.json").is_file()
 
 
+def test_save_checkpoint_can_omit_optimizer_for_evaluation(tmp_path):
+    source = tmp_path / "source"
+    stats = source / "assets" / "physical-intelligence" / "libero"
+    stats.mkdir(parents=True)
+    (source / "config.json").write_text(json.dumps({"action_dim": 32}))
+    (stats / "norm_stats.json").write_text(json.dumps({"state": {}, "actions": {}}))
+    model = torch.nn.Linear(2, 2)
+    optimizer = torch.optim.AdamW(model.parameters())
+
+    checkpoint = save_checkpoint(model, optimizer, 3, tmp_path / "output", source, include_optimizer=False)
+
+    assert (checkpoint / "model.safetensors").is_file()
+    assert not (checkpoint / "optimizer.pt").exists()
+    assert json.loads((checkpoint / "metadata.json").read_text())["resumable"] is False
+
+
 def test_evaluate_checkpoint_runs_separate_libero_environment(tmp_path, monkeypatch):
     checkpoint = tmp_path / "checkpoint"
     checkpoint.mkdir()

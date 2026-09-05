@@ -169,16 +169,26 @@ class _LocalLeRobotDataset(Dataset):
         }
 
 
-def save_checkpoint(model: Pi0, optimizer: torch.optim.Optimizer, step: int, output_dir: pathlib.Path,
-                    source_checkpoint: pathlib.Path) -> pathlib.Path:
+def save_checkpoint(
+    model: Pi0,
+    optimizer: torch.optim.Optimizer,
+    step: int,
+    output_dir: pathlib.Path,
+    source_checkpoint: pathlib.Path,
+    *,
+    include_optimizer: bool = True,
+) -> pathlib.Path:
     checkpoint = output_dir / str(step)
     temporary = output_dir / f".{step}.tmp"
     if temporary.exists():
         shutil.rmtree(temporary)
     temporary.mkdir(parents=True)
     safetensors.torch.save_model(model, str(temporary / "model.safetensors"))
-    torch.save(optimizer.state_dict(), temporary / "optimizer.pt")
-    (temporary / "metadata.json").write_text(json.dumps({"step": step, "created_at": time.time()}, indent=2) + "\n")
+    if include_optimizer:
+        torch.save(optimizer.state_dict(), temporary / "optimizer.pt")
+    (temporary / "metadata.json").write_text(
+        json.dumps({"step": step, "created_at": time.time(), "resumable": include_optimizer}, indent=2) + "\n"
+    )
     config_values = json.loads((source_checkpoint / "config.json").read_text())
     if isinstance(model, Pi0):
         # A LoRA checkpoint must declare its adapter layout so the standalone
@@ -313,7 +323,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--steps", type=int, required=True)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--learning-rate", type=float, default=5e-5)
-    parser.add_argument("--save-every", type=int, default=3000)
+    parser.add_argument(
+        "--save-every",
+        type=int,
+        default=3000,
+        help="Checkpoint interval. With --train_only, these are evaluation-only checkpoints.",
+    )
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--pi05", action="store_true")
@@ -321,6 +336,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--wandb-project", default="post_vla")
     parser.add_argument("--wandb-run-name", default=None)
     parser.add_argument("--no-wandb", action="store_true", help="Disable Weights & Biases logging")
+    parser.add_argument(
+        "--train-only",
+        "--train_only",
+        dest="train_only",
+        action="store_true",
+        help="Disable in-training evaluation; save resumable checkpoints only at epoch boundaries and the final step.",
+    )
     parser.add_argument("--eval-every", type=int, default=0, help="Run LIBERO evaluation every N steps (0 disables)")
     parser.add_argument("--eval-episodes", type=int, default=20)
     parser.add_argument("--eval-suite", default="libero_spatial")
@@ -389,6 +411,8 @@ def main() -> None:
         raise ValueError("LoRA ranks must be positive")
     if args.eval_every < 0 or args.eval_episodes < 1:
         raise ValueError("--eval-every must be non-negative and --eval-episodes must be positive")
+    if args.train_only and args.eval_every:
+        raise ValueError("--train_only cannot be combined with --eval-every; evaluate saved checkpoints separately")
     if args.eval_every:
         if not args.eval_python.is_file():
             raise FileNotFoundError(f"LIBERO evaluation Python not found: {args.eval_python}")
@@ -430,6 +454,8 @@ def main() -> None:
     extra_delta_actions = not config.pi05 if args.extra_delta_actions is None else args.extra_delta_actions
     dataset = LeRobotLiberoDataset(args.dataset_repo, config.action_horizon)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, num_workers=args.num_workers)
+    if not len(loader):
+        raise ValueError("Dataset is smaller than --batch-size with drop_last=True")
     iterator = iter(loader)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.save_every < 1:
@@ -481,8 +507,20 @@ def main() -> None:
             )
             print(f"step={step} loss={loss.item():.6f}{memory_message}", flush=True)
             should_evaluate = bool(args.eval_every and step % args.eval_every == 0)
-            if step % args.save_every == 0 or step == args.steps or should_evaluate:
-                saved = save_checkpoint(model, optimizer, step, args.output_dir, checkpoint)
+            epoch_complete = step % len(loader) == 0
+            final_step = step == args.steps
+            periodic_save = step % args.save_every == 0
+            should_save = periodic_save or final_step or should_evaluate or (args.train_only and epoch_complete)
+            if should_save:
+                resumable = not args.train_only or epoch_complete or final_step
+                saved = save_checkpoint(
+                    model,
+                    optimizer,
+                    step,
+                    args.output_dir,
+                    checkpoint,
+                    include_optimizer=resumable,
+                )
                 print(f"saved={saved}", flush=True)
             if should_evaluate:
                 # The evaluator loads a second copy of the checkpoint in its policy

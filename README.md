@@ -61,6 +61,11 @@ For a local LeRobot dataset, pass its directory directly to `--dataset-repo`, fo
 Training metrics are logged to the `chandrahul0320/post_vla` Weights & Biases project by default. Disable logging
 with `--no-wandb`. Checkpoints are saved every 3000 steps by default; override with `--save-every` if needed.
 
+For training without in-process evaluation, pass `--train_only`. It writes compact evaluation checkpoints at
+`--save-every` intervals, containing only `model.safetensors`, `config.json`, and normalization stats. It writes
+resumable checkpoints with `optimizer.pt` only at completed data epochs and the final step. Evaluate any compact
+checkpoint later with `post-vla-serve-torch` and `post-vla-eval-libero`.
+
 To evaluate a saved checkpoint on 20 task-0 episodes every 500 training steps, record every rollout, and log the
 success rate to the same W&B run, add:
 
