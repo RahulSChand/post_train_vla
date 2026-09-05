@@ -179,7 +179,18 @@ def save_checkpoint(model: Pi0, optimizer: torch.optim.Optimizer, step: int, out
     safetensors.torch.save_model(model, str(temporary / "model.safetensors"))
     torch.save(optimizer.state_dict(), temporary / "optimizer.pt")
     (temporary / "metadata.json").write_text(json.dumps({"step": step, "created_at": time.time()}, indent=2) + "\n")
-    shutil.copy2(source_checkpoint / "config.json", temporary / "config.json")
+    config_values = json.loads((source_checkpoint / "config.json").read_text())
+    if isinstance(model, Pi0):
+        # A LoRA checkpoint must declare its adapter layout so the standalone
+        # policy loader constructs the same modules before strict loading.
+        config_values.update(
+            {
+                "precision": model.config.dtype,
+                "paligemma_lora_rank": model.config.paligemma_lora_rank,
+                "action_expert_lora_rank": model.config.action_expert_lora_rank,
+            }
+        )
+    (temporary / "config.json").write_text(json.dumps(config_values, indent=2, sort_keys=True) + "\n")
     stats = find_norm_stats(source_checkpoint)
     relative_stats = stats.relative_to(source_checkpoint)
     destination = temporary / relative_stats
@@ -327,16 +338,55 @@ def build_parser() -> argparse.ArgumentParser:
         "--extra-delta-actions",
         action=argparse.BooleanOptionalAction,
         default=None,
-        help="Subtract current state from the first six action dimensions (default: enabled for pi0, disabled for pi0.5)",
+        help=(
+            "Subtract current state from the first six action dimensions "
+            "(default: enabled for pi0, disabled for pi0.5)"
+        ),
     )
-    parser.add_argument("--heads-only", action="store_true", help="Train only action/time projection layers")
+    trainable_group = parser.add_mutually_exclusive_group()
+    trainable_group.add_argument(
+        "--heads-only", action="store_true", help="Train only action/time projection layers"
+    )
+    trainable_group.add_argument(
+        "--lora",
+        action="store_true",
+        help="Use OpenPI-compatible LoRA on Gemma attention and MLP projections",
+    )
+    parser.add_argument(
+        "--lora-paligemma-rank",
+        type=int,
+        default=16,
+        help="LoRA rank for the 2B PaliGemma stream (OpenPI default: 16)",
+    )
+    parser.add_argument(
+        "--lora-action-expert-rank",
+        type=int,
+        default=32,
+        help="LoRA rank for the 300M action expert (OpenPI default: 32)",
+    )
+    parser.add_argument(
+        "--gradient-checkpointing",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Recompute joint-backbone layers in backward to reduce training memory (enabled by default with --lora)",
+    )
     return parser
+
+
+def configure_lora_trainable_parameters(model: Pi0) -> list[torch.nn.Parameter]:
+    """Train adapters and pi0 action/time heads while freezing converted base weights."""
+    trainable_heads = ("action_", "state_proj", "time_mlp_")
+    for name, parameter in model.named_parameters():
+        parameter.requires_grad = ".lora_" in name or name.startswith(trainable_heads)
+    return [parameter for parameter in model.parameters() if parameter.requires_grad]
 
 
 def main() -> None:
     args = build_parser().parse_args()
     if args.steps < 1 or args.batch_size < 1:
         raise ValueError("--steps and --batch-size must be positive")
+    if args.lora and (args.lora_paligemma_rank < 1 or args.lora_action_expert_rank < 1):
+        raise ValueError("LoRA ranks must be positive")
     if args.eval_every < 0 or args.eval_episodes < 1:
         raise ValueError("--eval-every must be non-negative and --eval-episodes must be positive")
     if args.eval_every:
@@ -352,10 +402,29 @@ def main() -> None:
     model = Pi0(config)
     safetensors.torch.load_model(model, str(checkpoint / "model.safetensors"), strict=True)
     model.to(device).train()
-    if args.heads_only:
+    if args.lora:
+        replaced = model.enable_lora(
+            paligemma_rank=args.lora_paligemma_rank,
+            action_expert_rank=args.lora_action_expert_rank,
+        )
+        parameters = configure_lora_trainable_parameters(model)
+        print(
+            "lora=" + ", ".join(f"{name}:{len(names)} projections" for name, names in replaced.items())
+            + f" trainable_parameters={sum(parameter.numel() for parameter in parameters)}",
+            flush=True,
+        )
+    elif args.heads_only:
         for name, parameter in model.named_parameters():
             parameter.requires_grad = name.startswith(("action_", "state_proj", "time_mlp_"))
-    parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+        parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    else:
+        parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    gradient_checkpointing = args.lora if args.gradient_checkpointing is None else args.gradient_checkpointing
+    model.set_gradient_checkpointing(gradient_checkpointing)
+    if gradient_checkpointing:
+        print("gradient_checkpointing=enabled", flush=True)
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
     optimizer = torch.optim.AdamW(parameters, lr=args.learning_rate)
     transforms = LiberoTransforms(config, find_norm_stats(checkpoint), args.tokenizer)
     extra_delta_actions = not config.pi05 if args.extra_delta_actions is None else args.extra_delta_actions
@@ -403,7 +472,14 @@ def main() -> None:
                 "train/learning_rate": args.learning_rate,
                 "train/grad_norm": float(grad_norm),
             }
-            print(f"step={step} loss={loss.item():.6f}", flush=True)
+            if device.type == "cuda":
+                metrics["train/gpu_peak_memory_gib"] = torch.cuda.max_memory_allocated(device) / 2**30
+            memory_message = (
+                f" gpu_peak_memory_gib={metrics['train/gpu_peak_memory_gib']:.2f}"
+                if "train/gpu_peak_memory_gib" in metrics
+                else ""
+            )
+            print(f"step={step} loss={loss.item():.6f}{memory_message}", flush=True)
             should_evaluate = bool(args.eval_every and step % args.eval_every == 0)
             if step % args.save_every == 0 or step == args.steps or should_evaluate:
                 saved = save_checkpoint(model, optimizer, step, args.output_dir, checkpoint)

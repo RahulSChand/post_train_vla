@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import torch
@@ -9,6 +10,7 @@ from torch import nn
 from torch.nn import functional
 
 from post_train_vla.models.configuration import Pi0Config
+from post_train_vla.models.lora import replace_gemma_linears
 from post_train_vla.models.observation import Observation
 from post_train_vla.models.paligemma_expert import PaliGemmaWithExpert, scale_language_embeddings
 from post_train_vla.models.preprocessing import preprocess_observation
@@ -51,7 +53,48 @@ class Pi0(nn.Module):
             self.state_proj = nn.Linear(config.action_dim, expert_width)
             self.action_time_mlp_in = nn.Linear(2 * expert_width, expert_width)
             self.action_time_mlp_out = nn.Linear(expert_width, expert_width)
+        if config.paligemma_lora_rank is not None or config.action_expert_lora_rank is not None:
+            self.enable_lora(
+                paligemma_rank=config.paligemma_lora_rank,
+                action_expert_rank=config.action_expert_lora_rank,
+            )
         torch.set_float32_matmul_precision("high")
+
+    def enable_lora(
+        self,
+        *,
+        paligemma_rank: int | None = 16,
+        action_expert_rank: int | None = 32,
+    ) -> dict[str, list[str]]:
+        """Add OpenPI-compatible LoRA adapters to the two Gemma backbones.
+
+        Attention Q/K/V/O and MLP gate/up/down are adapted.  Alpha equals rank,
+        matching OpenPI's JAX low-memory pi0 recipe.
+        """
+        replaced: dict[str, list[str]] = {}
+        if paligemma_rank is not None:
+            replaced["paligemma"] = replace_gemma_linears(
+                self.paligemma_with_expert.paligemma.model.language_model,
+                rank=paligemma_rank,
+                alpha=float(paligemma_rank),
+            )
+        if action_expert_rank is not None:
+            replaced["action_expert"] = replace_gemma_linears(
+                self.paligemma_with_expert.gemma_expert.model,
+                rank=action_expert_rank,
+                alpha=float(action_expert_rank),
+            )
+        self.config = dataclasses.replace(
+            self.config,
+            paligemma_lora_rank=paligemma_rank,
+            action_expert_lora_rank=action_expert_rank,
+        )
+        return replaced
+
+    def set_gradient_checkpointing(self, enabled: bool = True) -> None:
+        """Trade recomputation for activation memory in the joint training pass."""
+        self.paligemma_with_expert.paligemma.model.language_model.gradient_checkpointing = enabled
+        self.paligemma_with_expert.gemma_expert.model.gradient_checkpointing = enabled
 
     def _embed_prefix(self, observation: Observation):
         embeddings = []

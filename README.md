@@ -52,7 +52,7 @@ uv sync --extra model --extra train
   --tokenizer assets/paligemma_tokenizer.model \
   --dataset-repo physical-intelligence/libero \
   --output-dir outputs/finetune \
-  --steps 1000 --batch-size 1
+  --steps 1000 --batch-size 32 --lora
 ```
 
 For a local LeRobot dataset, pass its directory directly to `--dataset-repo`, for example
@@ -72,8 +72,13 @@ Each evaluation is stored under `OUTPUT_DIR/eval/step_NNNNNN/`; its `videos/` di
 `summary.json` contains the aggregate result. Evaluation pauses training while it runs and requires the prepared
 LIBERO Python 3.8 environment under `/home/ubuntu/openpi_easy/examples/libero/.venv`.
 
-Start with `--heads-only` when validating a new dataset or using limited GPU memory. A completed checkpoint is
-stored at `outputs/finetune/<step>/` and can replace `--checkpoint` for `post-vla-serve-torch`.
+`--lora` follows OpenPI's low-memory recipe: it adapts all Q/K/V/O attention and gate/up/down MLP projections,
+with rank 16 for PaliGemma and rank 32 for the action expert (alpha equals rank). The converted base model is
+frozen; only adapters and the pi0 action/time heads train, which keeps the memory profile appropriate for a
+40 GB GPU. Use
+`--lora-paligemma-rank` and `--lora-action-expert-rank` to override those defaults. A completed LoRA checkpoint
+records its adapter layout in `config.json` and can replace `--checkpoint` for `post-vla-serve-torch` directly.
+Start with `--heads-only` when validating a new dataset or using limited GPU memory.
 For pi0, the trainer matches OpenPI's legacy LIBERO configuration by converting the first six action dimensions to
 state-relative deltas; pass `--no-extra-delta-actions` only if your dataset already stores those deltas.
 

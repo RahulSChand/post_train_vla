@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 
 import torch
+from torch.utils.checkpoint import checkpoint
 from torch import nn
 from transformers import GemmaForCausalLM, PaliGemmaForConditionalGeneration
 from transformers.models.auto import CONFIG_MAPPING
@@ -162,48 +163,62 @@ class PaliGemmaWithExpert(nn.Module):
         models = [self.paligemma.model.language_model, self.gemma_expert.model]
         hidden_states = [prefix, suffix]
         for layer_index in range(len(models[0].layers)):
-            queries, keys, values, gates = [], [], [], []
-            for model, states, condition in zip(models, hidden_states, conditions, strict=True):
-                layer = model.layers[layer_index]
-                states, gate = layer.input_layernorm(states, condition)
-                shape = (*states.shape[:-1], -1, layer.self_attn.head_dim)
-                queries.append(layer.self_attn.q_proj(states).view(shape).transpose(1, 2))
-                keys.append(layer.self_attn.k_proj(states).view(shape).transpose(1, 2))
-                values.append(layer.self_attn.v_proj(states).view(shape).transpose(1, 2))
-                gates.append(gate)
+            def run_layer(*layer_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+                queries, keys, values, gates = [], [], [], []
+                for model, states, condition in zip(models, layer_states, conditions, strict=True):
+                    layer = model.layers[layer_index]
+                    states, gate = layer.input_layernorm(states, condition)
+                    shape = (*states.shape[:-1], -1, layer.self_attn.head_dim)
+                    queries.append(layer.self_attn.q_proj(states).view(shape).transpose(1, 2))
+                    keys.append(layer.self_attn.k_proj(states).view(shape).transpose(1, 2))
+                    values.append(layer.self_attn.v_proj(states).view(shape).transpose(1, 2))
+                    gates.append(gate)
 
-            query = torch.cat(queries, dim=2)
-            key = torch.cat(keys, dim=2)
-            value = torch.cat(values, dim=2)
-            rotary_input = torch.zeros(
-                query.shape[0], query.shape[2], query.shape[-1], dtype=query.dtype, device=query.device
-            )
-            cosine, sine = models[0].rotary_emb(rotary_input, position_ids)
-            query, key = modeling_gemma.apply_rotary_pos_emb(query, key, cosine, sine, unsqueeze_dim=1)
-            attention, _ = modeling_gemma.eager_attention_forward(
-                models[0].layers[layer_index].self_attn,
-                query,
-                key,
-                value,
-                attention_mask,
-                models[0].layers[layer_index].self_attn.scaling,
-            )
-            attention = _flatten_attention_heads(attention)
+                query = torch.cat(queries, dim=2)
+                key = torch.cat(keys, dim=2)
+                value = torch.cat(values, dim=2)
+                rotary_input = torch.zeros(
+                    query.shape[0], query.shape[2], query.shape[-1], dtype=query.dtype, device=query.device
+                )
+                cosine, sine = models[0].rotary_emb(rotary_input, position_ids)
+                query, key = modeling_gemma.apply_rotary_pos_emb(query, key, cosine, sine, unsqueeze_dim=1)
+                attention, _ = modeling_gemma.eager_attention_forward(
+                    models[0].layers[layer_index].self_attn,
+                    query,
+                    key,
+                    value,
+                    attention_mask,
+                    models[0].layers[layer_index].self_attn.scaling,
+                )
+                attention = _flatten_attention_heads(attention)
 
-            next_states, start = [], 0
-            for model, states, gate, condition in zip(models, hidden_states, gates, conditions, strict=True):
-                layer = model.layers[layer_index]
-                end = start + states.shape[1]
-                layer_attention = attention[:, start:end].to(layer.self_attn.o_proj.weight.dtype)
-                output = layer.self_attn.o_proj(layer_attention)
-                output = _gated_residual(states, output, gate)
-                residual = output
-                output, gate = layer.post_attention_layernorm(output, condition)
-                output = output.to(layer.mlp.up_proj.weight.dtype)
-                output = layer.mlp(output)
-                next_states.append(_gated_residual(residual, output, gate))
-                start = end
-            hidden_states = next_states
+                next_states, start = [], 0
+                for model, states, gate, condition in zip(models, layer_states, gates, conditions, strict=True):
+                    layer = model.layers[layer_index]
+                    end = start + states.shape[1]
+                    layer_attention = attention[:, start:end].to(layer.self_attn.o_proj.weight.dtype)
+                    output = layer.self_attn.o_proj(layer_attention)
+                    output = _gated_residual(states, output, gate)
+                    residual = output
+                    output, gate = layer.post_attention_layernorm(output, condition)
+                    output = output.to(layer.mlp.up_proj.weight.dtype)
+                    output = layer.mlp(output)
+                    next_states.append(_gated_residual(residual, output, gate))
+                    start = end
+                return tuple(next_states)  # type: ignore[return-value]
+
+            use_checkpoint = (
+                self.training
+                and torch.is_grad_enabled()
+                and all(model.gradient_checkpointing for model in models)
+                # pi0.5's adaRMS condition has its own gradient path. Keep the
+                # eager path there until it is explicitly checkpointed as input.
+                and all(condition is None for condition in conditions)
+            )
+            if use_checkpoint:
+                hidden_states = list(checkpoint(run_layer, *hidden_states, use_reentrant=False))
+            else:
+                hidden_states = list(run_layer(*hidden_states))
 
         outputs = [
             model.norm(states, condition)[0]

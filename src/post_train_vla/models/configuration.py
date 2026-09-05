@@ -34,6 +34,10 @@ class Pi0Config:
     dtype: str = "bfloat16"
     num_inference_steps: int = 10
     compile_mode: str | None = None
+    # Match OpenPI's low-memory pi0 configuration when both are set: rank 16
+    # on the 2B PaliGemma stream and rank 32 on the 300M action expert.
+    paligemma_lora_rank: int | None = None
+    action_expert_lora_rank: int | None = None
 
     def __post_init__(self) -> None:
         if self.paligemma_variant not in GEMMA_VARIANTS:
@@ -42,6 +46,10 @@ class Pi0Config:
             raise ValueError(f"Unsupported action expert variant: {self.action_expert_variant}")
         if self.max_token_len is None:
             object.__setattr__(self, "max_token_len", 200 if self.pi05 else 48)
+        for name in ("paligemma_lora_rank", "action_expert_lora_rank"):
+            rank = getattr(self, name)
+            if rank is not None and rank < 1:
+                raise ValueError(f"{name} must be positive when set, got {rank}")
 
     @classmethod
     def from_checkpoint(cls, checkpoint: pathlib.Path, *, pi05: bool | None = None) -> Pi0Config:
@@ -55,6 +63,8 @@ class Pi0Config:
             action_expert_variant=values.get("action_expert_variant", "gemma_300m"),
             pi05=inferred_pi05,
             dtype=values.get("precision", "bfloat16"),
+            paligemma_lora_rank=values.get("paligemma_lora_rank"),
+            action_expert_lora_rank=values.get("action_expert_lora_rank"),
         )
 
     @property
