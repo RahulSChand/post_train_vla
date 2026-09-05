@@ -78,6 +78,10 @@ frozen; only adapters and the pi0 action/time heads train, which keeps the memor
 40 GB GPU. Use
 `--lora-paligemma-rank` and `--lora-action-expert-rank` to override those defaults. A completed LoRA checkpoint
 records its adapter layout in `config.json` and can replace `--checkpoint` for `post-vla-serve-torch` directly.
+On the available A100 40 GB GPU, a one-step LIBERO smoke train (forward, backward, optimizer update, and
+checkpoint save) succeeded through batch size 96, with a 34.61 GiB PyTorch peak at that size; batch size 97
+OOMed during backward. Use 96 as the tested maximum for this exact configuration, or leave headroom for other
+GPU workloads.
 Start with `--heads-only` when validating a new dataset or using limited GPU memory.
 For pi0, the trainer matches OpenPI's legacy LIBERO configuration by converting the first six action dimensions to
 state-relative deltas; pass `--no-extra-delta-actions` only if your dataset already stores those deltas.
