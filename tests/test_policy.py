@@ -3,6 +3,7 @@ import pytest
 
 from post_train_vla import serialization
 from post_train_vla.evaluator import ActionChunker
+from post_train_vla.eval_libero import _episode_chunks
 
 
 def test_numpy_messagepack_round_trip():
@@ -24,3 +25,8 @@ def test_action_chunker_replans_after_requested_actions():
 def test_action_chunker_rejects_short_horizon():
     with pytest.raises(ValueError, match="shorter"):
         ActionChunker(replan_steps=2).add(np.zeros((1, 7), dtype=np.float32))
+
+
+def test_episode_chunks_cover_each_episode_once():
+    assert _episode_chunks(20, 6) == [(0, 4), (4, 4), (8, 3), (11, 3), (14, 3), (17, 3)]
+    assert _episode_chunks(3, 20) == [(0, 1), (1, 1), (2, 1)]

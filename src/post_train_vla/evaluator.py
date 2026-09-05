@@ -132,6 +132,8 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
                 policy_steps = 0
                 inference_calls = 0
                 inference_ms = []
+                server_inference_ms = []
+                inference_batch_sizes = []
                 frames = []
                 policy.reset()
                 try:
@@ -152,6 +154,11 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
                             inference_started = time.monotonic()
                             response = policy.infer(policy_observation)
                             inference_ms.append((time.monotonic() - inference_started) * 1000.0)
+                            timing = response.get("policy_timing", {})
+                            if timing.get("infer_ms") is not None:
+                                server_inference_ms.append(float(timing["infer_ms"]))
+                            if timing.get("batch_size") is not None:
+                                inference_batch_sizes.append(int(timing["batch_size"]))
                             inference_calls += 1
                             chunker.add(response["actions"])
                         observation, _, done, _ = environment.step(chunker.pop().tolist())
@@ -171,6 +178,12 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
                     "policy_steps": policy_steps,
                     "inference_calls": inference_calls,
                     "mean_inference_ms": float(np.mean(inference_ms)) if inference_ms else None,
+                    "mean_server_inference_ms": (
+                        float(np.mean(server_inference_ms)) if server_inference_ms else None
+                    ),
+                    "mean_inference_batch_size": (
+                        float(np.mean(inference_batch_sizes)) if inference_batch_sizes else None
+                    ),
                     "elapsed_seconds": time.monotonic() - started_at,
                     "error": error,
                 }

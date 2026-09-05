@@ -74,6 +74,31 @@ class LiberoTransforms:
         )
         return observation, state
 
+    def encode_batch(
+        self, raw_observations: list[dict], device: torch.device | str
+    ) -> tuple[Observation, list[np.ndarray]]:
+        """Encode independent policy requests as one model batch."""
+        if not raw_observations:
+            raise ValueError("Cannot encode an empty observation batch")
+        encoded = [self.encode(raw, "cpu") for raw in raw_observations]
+        observations, states = zip(*encoded)
+        batch = Observation(
+            images={
+                key: torch.cat([observation.images[key] for observation in observations], dim=0)
+                for key in observations[0].images
+            },
+            image_masks={
+                key: torch.cat([observation.image_masks[key] for observation in observations], dim=0)
+                for key in observations[0].image_masks
+            },
+            state=torch.cat([observation.state for observation in observations], dim=0),
+            tokenized_prompt=torch.cat([observation.tokenized_prompt for observation in observations], dim=0),
+            tokenized_prompt_mask=torch.cat(
+                [observation.tokenized_prompt_mask for observation in observations], dim=0
+            ),
+        ).to(device)
+        return batch, list(states)
+
     def encode_training_batch(
         self, raw: dict, device: torch.device | str, *, extra_delta_actions: bool = False
     ) -> tuple[Observation, torch.Tensor]:

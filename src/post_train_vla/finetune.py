@@ -226,6 +226,59 @@ def _wait_for_server(process: subprocess.Popen, host: str, port: int, timeout: f
     raise TimeoutError(f"Evaluation policy server was not ready at {host}:{port} after {timeout:.0f}s")
 
 
+def _evaluation_environment(openpi_root: pathlib.Path) -> tuple[pathlib.Path, dict[str, str]]:
+    project_root = pathlib.Path(__file__).resolve().parents[2]
+    environment = os.environ.copy()
+    python_paths = [str(project_root / "src"), str(openpi_root / "third_party" / "libero")]
+    if environment.get("PYTHONPATH"):
+        python_paths.append(environment["PYTHONPATH"])
+    environment["PYTHONPATH"] = os.pathsep.join(python_paths)
+    environment.setdefault("MUJOCO_GL", "osmesa")
+    environment.setdefault("PYOPENGL_PLATFORM", environment["MUJOCO_GL"])
+    for thread_variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        environment.setdefault(thread_variable, "1")
+    return project_root, environment
+
+
+def _run_libero_evaluation(
+    policy_url: str,
+    evaluation_dir: pathlib.Path,
+    *,
+    eval_python: pathlib.Path,
+    openpi_root: pathlib.Path,
+    suite: str,
+    task_id: int,
+    episodes: int,
+    save_video: bool,
+    eval_workers: int,
+    environment: dict[str, str],
+) -> dict:
+    evaluator_command = [
+        str(eval_python),
+        "-m",
+        "post_train_vla.eval_libero",
+        "--policy-url",
+        policy_url,
+        "--suite",
+        suite,
+        "--task-id",
+        str(task_id),
+        "--episodes-per-task",
+        str(episodes),
+        "--output-dir",
+        str(evaluation_dir),
+    ]
+    if eval_workers > 1:
+        evaluator_command.extend(("--workers", str(eval_workers)))
+    if save_video:
+        evaluator_command.append("--save-video")
+    subprocess.run(evaluator_command, cwd=openpi_root, env=environment, check=True)
+    summary_path = evaluation_dir / "summary.json"
+    if not summary_path.is_file():
+        raise FileNotFoundError(f"LIBERO evaluation did not produce {summary_path}")
+    return json.loads(summary_path.read_text())
+
+
 def evaluate_checkpoint(
     checkpoint: pathlib.Path,
     tokenizer: pathlib.Path,
@@ -242,19 +295,16 @@ def evaluate_checkpoint(
     server_timeout: float,
     device: str,
     pi05: bool,
+    eval_workers: int = 1,
+    max_batch_size: int = 1,
+    batch_wait_ms: float = 5.0,
 ) -> dict:
     """Evaluate a saved checkpoint in LIBERO using the separate Python 3.8 environment."""
     host = "127.0.0.1"
     # The evaluator runs with ``openpi_root`` as its working directory, so pass
     # an absolute output path and read the result from that same location.
     evaluation_dir = (output_dir / "eval" / f"step_{step:06d}").resolve()
-    project_root = pathlib.Path(__file__).resolve().parents[2]
-    environment = os.environ.copy()
-    python_paths = [str(project_root / "src"), str(openpi_root / "third_party" / "libero")]
-    if environment.get("PYTHONPATH"):
-        python_paths.append(environment["PYTHONPATH"])
-    environment["PYTHONPATH"] = os.pathsep.join(python_paths)
-    environment.setdefault("MUJOCO_GL", "egl")
+    project_root, environment = _evaluation_environment(openpi_root)
 
     server_command = [
         sys.executable,
@@ -270,32 +320,29 @@ def evaluate_checkpoint(
         host,
         "--port",
         str(port),
+        "--max-batch-size",
+        str(max_batch_size),
+        "--batch-wait-ms",
+        str(batch_wait_ms),
     ]
     if pi05:
         server_command.extend(("--model", "pi05"))
 
-    evaluator_command = [
-        str(eval_python),
-        "-m",
-        "post_train_vla.eval_libero",
-        "--policy-url",
-        f"ws://{host}:{port}",
-        "--suite",
-        suite,
-        "--task-id",
-        str(task_id),
-        "--episodes-per-task",
-        str(episodes),
-        "--output-dir",
-        str(evaluation_dir),
-    ]
-    if save_video:
-        evaluator_command.append("--save-video")
-
     server = subprocess.Popen(server_command, cwd=project_root, env=environment)
     try:
         _wait_for_server(server, host, port, server_timeout)
-        subprocess.run(evaluator_command, cwd=openpi_root, env=environment, check=True)
+        return _run_libero_evaluation(
+            f"ws://{host}:{port}",
+            evaluation_dir,
+            eval_python=eval_python,
+            openpi_root=openpi_root,
+            suite=suite,
+            task_id=task_id,
+            episodes=episodes,
+            save_video=save_video,
+            eval_workers=eval_workers,
+            environment=environment,
+        )
     finally:
         server.terminate()
         try:
@@ -304,10 +351,6 @@ def evaluate_checkpoint(
             server.kill()
             server.wait()
 
-    summary_path = evaluation_dir / "summary.json"
-    if not summary_path.is_file():
-        raise FileNotFoundError(f"LIBERO evaluation did not produce {summary_path}")
-    return json.loads(summary_path.read_text())
 
 
 def build_parser() -> argparse.ArgumentParser:

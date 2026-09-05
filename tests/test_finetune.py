@@ -40,6 +40,28 @@ def test_encode_training_batch_pads_libero_actions():
     assert torch.count_nonzero(actions[..., 7:]) == 0
 
 
+def test_encode_batch_combines_independent_inference_requests():
+    transforms = object.__new__(LiberoTransforms)
+    transforms.config = Pi0Config()
+    transforms.tokenizer = _Tokenizer()
+    transforms.stats = {
+        "state": {"mean": [0.0] * 8, "std": [1.0] * 8},
+        "actions": {"mean": [0.0] * 7, "std": [1.0] * 7},
+    }
+    raw = {
+        "observation/image": np.zeros((16, 16, 3), dtype=np.uint8),
+        "observation/wrist_image": np.zeros((16, 16, 3), dtype=np.uint8),
+        "observation/state": np.zeros(8, dtype=np.float32),
+        "prompt": "task",
+    }
+
+    observation, states = transforms.encode_batch([raw, raw], "cpu")
+
+    assert observation.images["base_0_rgb"].shape == (2, 16, 16, 3)
+    assert observation.state.shape == (2, 32)
+    assert len(states) == 2
+
+
 def test_save_checkpoint_preserves_standalone_runtime_assets(tmp_path):
     source = tmp_path / "source"
     stats = source / "assets" / "physical-intelligence" / "libero"
@@ -125,6 +147,9 @@ def test_evaluate_checkpoint_runs_separate_libero_environment(tmp_path, monkeypa
         server_timeout=60,
         device="cuda",
         pi05=False,
+        eval_workers=20,
+        max_batch_size=20,
+        batch_wait_ms=10,
     )
 
     assert summary["success_rate"] == 0.75
@@ -135,3 +160,5 @@ def test_evaluate_checkpoint_runs_separate_libero_environment(tmp_path, monkeypa
     assert pathlib.Path(evaluation_dir).is_absolute()
     assert calls["evaluator_command"][calls["evaluator_command"].index("--episodes-per-task") + 1] == "20"
     assert calls["server_command"][calls["server_command"].index("--port") + 1] == "8123"
+    assert calls["server_command"][calls["server_command"].index("--max-batch-size") + 1] == "20"
+    assert calls["evaluator_command"][calls["evaluator_command"].index("--workers") + 1] == "20"

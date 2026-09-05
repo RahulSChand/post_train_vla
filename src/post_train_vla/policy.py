@@ -77,6 +77,18 @@ class WebsocketPolicy:
             raise ValueError("Policy returned NaN or infinite actions")
         return result
 
+    def load_checkpoint(self, checkpoint: str) -> None:
+        if self._connection is None:
+            raise RuntimeError("Policy connection is closed")
+        self._connection.send(self._packer.pack({"__command__": "load_checkpoint", "checkpoint": checkpoint}))
+        response = self._connection.recv()
+        if isinstance(response, str):
+            raise RuntimeError(f"Policy server error:\n{response}")
+        result = serialization.unpackb(response)
+        if not result.get("ok"):
+            raise RuntimeError(f"Policy server rejected checkpoint reload: {result}")
+        self.metadata = result["metadata"]
+
     def reset(self) -> None:
         # OpenPI's current protocol has no stateful reset message.
         return None

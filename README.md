@@ -110,6 +110,20 @@ Run one smoke episode in another terminal:
 Results are written to `outputs/smoke/episodes.jsonl` and `outputs/smoke/summary.json`. Pass `--save-video` to the
 script to record a rollout. Remove `--task-id 0` and increase `--episodes-per-task` for complete evaluation.
 
+For fast evaluation of all periodic checkpoints, run 20 LIBERO environments concurrently and batch their policy
+requests on the GPU:
+
+```bash
+post-vla-eval-checkpoints \
+  --checkpoints-dir /home/ubuntu/post_train_vla/outputs/finetune_bs14_4epochs \
+  --tokenizer /home/ubuntu/post_train_vla/assets/paligemma_tokenizer.model \
+  --every 500 --episodes 20 --workers 20 --max-batch-size 20
+```
+
+The sweep is resumable: checkpoints with a complete 20-episode `summary.json` are skipped. Results are written
+under `CHECKPOINTS_DIR/eval/step_NNNNNN/`, with an aggregate summary at `CHECKPOINTS_DIR/eval/summary.json`. One
+policy server stays alive for the sweep and hot-loads subsequent checkpoints, avoiding repeated model construction.
+
 ## Verification
 
 ```bash
