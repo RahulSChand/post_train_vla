@@ -2,10 +2,11 @@ import json
 import pathlib
 
 import numpy as np
+import pytest
 import torch
 
 import post_train_vla.finetune as finetune
-from post_train_vla.finetune import save_checkpoint
+from post_train_vla.finetune import read_resume_step, restore_optimizer, save_checkpoint
 from post_train_vla.models.configuration import Pi0Config
 from post_train_vla.transforms import LiberoTransforms
 
@@ -93,6 +94,45 @@ def test_save_checkpoint_can_omit_optimizer_for_evaluation(tmp_path):
     assert (checkpoint / "model.safetensors").is_file()
     assert not (checkpoint / "optimizer.pt").exists()
     assert json.loads((checkpoint / "metadata.json").read_text())["resumable"] is False
+
+
+def test_resume_restores_step_and_optimizer_state(tmp_path):
+    source = tmp_path / "source"
+    stats = source / "assets" / "physical-intelligence" / "libero"
+    stats.mkdir(parents=True)
+    (source / "config.json").write_text(json.dumps({"action_dim": 32}))
+    (stats / "norm_stats.json").write_text(json.dumps({"state": {}, "actions": {}}))
+
+    model = torch.nn.Linear(2, 2)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
+    model(torch.ones(1, 2)).sum().backward()
+    optimizer.step()
+    checkpoint = save_checkpoint(model, optimizer, 12, tmp_path / "output", source)
+
+    resumed_model = torch.nn.Linear(2, 2)
+    resumed_optimizer = torch.optim.AdamW(resumed_model.parameters(), lr=5e-5)
+    restore_optimizer(resumed_optimizer, checkpoint)
+
+    assert read_resume_step(checkpoint) == 12
+    assert resumed_optimizer.state_dict()["state"]
+    assert resumed_optimizer.state_dict()["param_groups"] == optimizer.state_dict()["param_groups"]
+
+
+def test_resume_rejects_non_resumable_checkpoint(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "metadata.json").write_text(json.dumps({"step": 10, "resumable": False}))
+
+    with pytest.raises(ValueError, match="non-resumable"):
+        read_resume_step(checkpoint)
+
+
+def test_warm_resume_does_not_require_optimizer_file(tmp_path):
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+    (checkpoint / "metadata.json").write_text(json.dumps({"step": 15132, "resumable": True}))
+
+    assert read_resume_step(checkpoint, require_optimizer=False) == 15132
 
 
 def test_evaluate_checkpoint_runs_separate_libero_environment(tmp_path, monkeypatch):

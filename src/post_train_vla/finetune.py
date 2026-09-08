@@ -212,6 +212,35 @@ def save_checkpoint(
     return checkpoint
 
 
+def read_resume_step(checkpoint: pathlib.Path, *, require_optimizer: bool = True) -> int:
+    """Validate a resumable checkpoint and return its completed global step."""
+    metadata_path = checkpoint / "metadata.json"
+    optimizer_path = checkpoint / "optimizer.pt"
+    if not metadata_path.is_file():
+        raise FileNotFoundError(f"Resume checkpoint has no metadata: {metadata_path}")
+    metadata = json.loads(metadata_path.read_text())
+    if not metadata.get("resumable", False):
+        raise ValueError(f"Checkpoint is marked non-resumable: {checkpoint}")
+    if require_optimizer and not optimizer_path.is_file():
+        raise FileNotFoundError(f"Resume checkpoint has no optimizer state: {optimizer_path}")
+    step = int(metadata.get("step", 0))
+    if step < 1:
+        raise ValueError(f"Resume checkpoint has an invalid step: {step}")
+    return step
+
+
+def restore_optimizer(optimizer: torch.optim.Optimizer, checkpoint: pathlib.Path) -> None:
+    """Restore optimizer tensors, casting them onto their parameters' devices."""
+    state_dict = torch.load(checkpoint / "optimizer.pt", map_location="cpu", weights_only=True)
+    try:
+        optimizer.load_state_dict(state_dict)
+    except ValueError as exc:
+        raise ValueError(
+            "Optimizer state is incompatible with the selected trainable parameters. "
+            "Use the same --lora/--heads-only mode as the original run."
+        ) from exc
+
+
 def _wait_for_server(process: subprocess.Popen, host: str, port: int, timeout: float) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -363,7 +392,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Hub repo ID or local LeRobot dataset directory",
     )
     parser.add_argument("--output-dir", type=pathlib.Path, required=True)
-    parser.add_argument("--steps", type=int, required=True)
+    parser.add_argument(
+        "--steps",
+        type=int,
+        required=True,
+        help="Target global step (for a fresh run, the number of training steps)",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Restore optimizer state and global step from --checkpoint",
+    )
+    parser.add_argument(
+        "--reset-optimizer",
+        action="store_true",
+        help="With --resume, preserve the checkpoint step but initialize a fresh optimizer",
+    )
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--learning-rate", type=float, default=5e-5)
     parser.add_argument(
@@ -378,6 +422,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--wandb-entity", default="chandrahul0320")
     parser.add_argument("--wandb-project", default="post_vla")
     parser.add_argument("--wandb-run-name", default=None)
+    parser.add_argument(
+        "--wandb-run-id",
+        default=None,
+        help="Existing W&B run ID to resume; omit to log continuation as a new run",
+    )
     parser.add_argument("--no-wandb", action="store_true", help="Disable Weights & Biases logging")
     parser.add_argument(
         "--train-only",
@@ -462,6 +511,15 @@ def main() -> None:
         if not args.openpi_root.is_dir():
             raise FileNotFoundError(f"OpenPI root not found: {args.openpi_root}")
     checkpoint = args.checkpoint.expanduser().resolve()
+    if args.reset_optimizer and not args.resume:
+        raise ValueError("--reset-optimizer requires --resume")
+    initial_step = read_resume_step(checkpoint, require_optimizer=not args.reset_optimizer) if args.resume else 0
+    if args.steps <= initial_step:
+        raise ValueError(
+            f"--steps is the target global step and must exceed resumed step {initial_step}; got {args.steps}"
+        )
+    if args.wandb_run_id and not args.resume:
+        raise ValueError("--wandb-run-id requires --resume")
     config = Pi0Config.from_checkpoint(checkpoint, pi05=args.pi05)
     device = torch.device(args.device)
     if device.type == "cuda" and not torch.cuda.is_available():
@@ -493,6 +551,11 @@ def main() -> None:
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
     optimizer = torch.optim.AdamW(parameters, lr=args.learning_rate)
+    if args.resume and not args.reset_optimizer:
+        restore_optimizer(optimizer, checkpoint)
+        print(f"resumed={checkpoint} initial_step={initial_step}", flush=True)
+    elif args.reset_optimizer:
+        print(f"warm_started={checkpoint} initial_step={initial_step} optimizer=fresh", flush=True)
     transforms = LiberoTransforms(config, find_norm_stats(checkpoint), args.tokenizer)
     extra_delta_actions = not config.pi05 if args.extra_delta_actions is None else args.extra_delta_actions
     dataset = LeRobotLiberoDataset(args.dataset_repo, config.action_horizon)
@@ -518,11 +581,14 @@ def main() -> None:
             entity=args.wandb_entity,
             project=args.wandb_project,
             name=args.wandb_run_name,
+            id=args.wandb_run_id,
+            resume="must" if args.wandb_run_id else None,
             config=wandb_config,
+            allow_val_change=args.resume,
         )
 
     try:
-        for step in range(1, args.steps + 1):
+        for step in range(initial_step + 1, args.steps + 1):
             try:
                 batch = next(iterator)
             except StopIteration:

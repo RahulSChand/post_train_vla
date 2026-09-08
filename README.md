@@ -58,6 +58,25 @@ uv sync --extra model --extra train
 For a local LeRobot dataset, pass its directory directly to `--dataset-repo`, for example
 `--dataset-repo /home/ubuntu/.cache/huggingface/lerobot/libero_spatial`.
 
+Resume a checkpoint containing `optimizer.pt` by passing it as `--checkpoint` with `--resume`. In resume mode,
+`--steps` is the target global step, not the number of additional steps. For example, to continue a four-epoch
+checkpoint at step 15132 through a fifth 3783-step epoch:
+
+```bash
+.venv/bin/post-vla-finetune \
+  --checkpoint /home/ubuntu/15132 \
+  --tokenizer assets/paligemma_tokenizer.model \
+  --dataset-repo /home/ubuntu/libero_spatial_post \
+  --output-dir outputs/finetune_bs14_5epochs \
+  --steps 18915 --batch-size 14 --learning-rate 5e-5 \
+  --save-every 500 --train-only --resume
+```
+
+Add `--wandb-run-id 5iwn2igx` to continue logging into the original W&B run; omit it to create a new continuation
+run. Resume restores model and optimizer state at the saved global step. Data-loader and RNG state are not saved.
+If optimizer state is unavailable or corrupt, add `--reset-optimizer` with `--resume` to preserve the model and
+global step while explicitly starting a fresh optimizer.
+
 Training metrics are logged to the `chandrahul0320/post_vla` Weights & Biases project by default. Disable logging
 with `--no-wandb`. Checkpoints are saved every 3000 steps by default; override with `--save-every` if needed.
 
