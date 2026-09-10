@@ -39,6 +39,7 @@ class TorchPolicy:
         with torch.device("meta"):
             self.model = Pi0(self.config)
         self.model.to_empty(device=self.device)
+        self._initialize_position_buffers()
         self._retie_weights()
         weights = self.checkpoint / "model.safetensors"
         if not weights.is_file():
@@ -61,6 +62,22 @@ class TorchPolicy:
     def _retie_weights(self) -> None:
         paligemma = self.model.paligemma_with_expert.paligemma
         paligemma.model.language_model.embed_tokens.weight = paligemma.lm_head.weight
+
+    @torch.no_grad()
+    def _initialize_position_buffers(self) -> None:
+        """Restore nonpersistent buffers omitted from safetensors after meta allocation."""
+        backbone = self.model.paligemma_with_expert
+        embeddings = backbone.paligemma.model.vision_tower.vision_model.embeddings
+        embeddings.position_ids.copy_(
+            torch.arange(embeddings.num_positions, device=embeddings.position_ids.device).unsqueeze(0)
+        )
+        for stream in (backbone.paligemma.model.language_model, backbone.gemma_expert.model):
+            rotary = stream.rotary_emb
+            frequencies, scaling = rotary.rope_init_fn(rotary.config, rotary.inv_freq.device)
+            # copy_ preserves the buffer dtype used by ordinary model construction.
+            rotary.inv_freq.copy_(frequencies)
+            rotary.original_inv_freq = rotary.inv_freq
+            rotary.attention_scaling = scaling
 
     def load_checkpoint(self, checkpoint: pathlib.Path) -> None:
         """Hot-load weights into the existing model without reconstructing it."""

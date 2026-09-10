@@ -163,7 +163,9 @@ class PaliGemmaWithExpert(nn.Module):
         models = [self.paligemma.model.language_model, self.gemma_expert.model]
         hidden_states = [prefix, suffix]
         for layer_index in range(len(models[0].layers)):
-            def run_layer(*layer_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            # Pass the index explicitly: backward recomputation runs after the
+            # loop has advanced, so capturing its variable would use the last layer.
+            def run_layer(layer_index: int, *layer_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
                 queries, keys, values, gates = [], [], [], []
                 for model, states, condition in zip(models, layer_states, conditions, strict=True):
                     layer = model.layers[layer_index]
@@ -216,9 +218,9 @@ class PaliGemmaWithExpert(nn.Module):
                 and all(condition is None for condition in conditions)
             )
             if use_checkpoint:
-                hidden_states = list(checkpoint(run_layer, *hidden_states, use_reentrant=False))
+                hidden_states = list(checkpoint(run_layer, layer_index, *hidden_states, use_reentrant=False))
             else:
-                hidden_states = list(run_layer(*hidden_states))
+                hidden_states = list(run_layer(layer_index, *hidden_states))
 
         outputs = [
             model.norm(states, condition)[0]

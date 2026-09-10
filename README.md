@@ -38,6 +38,33 @@ cd /home/ubuntu/post_train_vla
 Pass `--compile` only after ordinary eager inference works. For pi0.5, use a matching converted checkpoint and
 `--model pi05`.
 
+### Moving to a new instance after the September 10 fixes
+
+Copy this updated source tree (including `src/`, `tests/`, `pyproject.toml`, and `uv.lock`), the tokenizer, and
+the required checkpoint/dataset assets. Recreate the model environment with `uv sync --extra model --extra train
+--extra dev` and the LIBERO environment as described below; do not copy an existing `.venv` across instances.
+
+The policy loader now initializes image-patch positions and both rotary-attention frequency buffers after meta
+allocation. Existing model checkpoints are compatible and do not need conversion or retraining for this fix.
+Restart policy servers to load the updated code. Evaluate into a new `--output-dir`; for a checkpoint sweep,
+move the existing `CHECKPOINTS_DIR/eval` folder to an unused backup name before rerunning, since the sweep skips
+completed summaries even if they were produced by the old loader.
+
+Gradient checkpointing now passes each transformer layer index explicitly into recomputation. Regression tests
+compare all parameter and input gradients against ordinary backward, including LoRA, and compare the fast policy
+loader against normally initialized models in float32/bfloat16 for pi0/pi0.5:
+
+```bash
+.venv/bin/python -m pytest -q tests/test_model_regressions.py
+```
+
+For a fresh pi0-base fine-tune, use your converted **pi0_base** checkpoint with matching LIBERO normalization
+assets, a new output directory, and omit `--resume`. The example below instead starts from an already
+LIBERO-fine-tuned checkpoint. These two code fixes do not establish the cause of the stalled updates observed in
+the previous run. Before a long restart, verify actual parameter changes on real training batches and evaluate
+an early saved checkpoint. The old step-55988 checkpoint already achieved 14/20 task-0 successes when its position
+buffers were restored in an isolated diagnostic; preserve it for comparison.
+
 ## Fine-tuning on LIBERO LeRobot data
 
 The minimal trainer uses the same LeRobot field layout as OpenPI's LIBERO converter: `image`, `wrist_image`,
