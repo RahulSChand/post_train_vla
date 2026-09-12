@@ -96,7 +96,22 @@ def test_prefix_cache_is_not_mutated_by_suffix():
 
 def test_pi05_configuration_defaults():
     assert Pi0Config(pi05=True).max_token_len == 200
+    assert Pi0Config(pi05=True).discrete_state_input is True
     assert Pi0Config(pi05=False).max_token_len == 48
+    assert Pi0Config(pi05=False).discrete_state_input is False
+
+
+def test_pi05_libero_configuration_disables_discrete_state_input(tmp_path):
+    (tmp_path / "config.json").write_text(
+        '{"pi05": true, "action_horizon": 10, "max_token_len": 200, "discrete_state_input": false}'
+    )
+
+    config = Pi0Config.from_checkpoint(tmp_path)
+
+    assert config.pi05 is True
+    assert config.action_horizon == 10
+    assert config.max_token_len == 200
+    assert config.discrete_state_input is False
 
 
 def test_small_gemma_matches_openpi_reference():

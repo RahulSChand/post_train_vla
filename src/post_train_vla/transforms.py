@@ -50,7 +50,9 @@ class LiberoTransforms:
         state = np.asarray(raw["observation/state"], dtype=np.float32)
         normalized_state = self._normalize(state, "state")
         padded_state = np.pad(normalized_state, (0, self.config.action_dim - len(normalized_state)))
-        tokens, token_mask = self.tokenizer.tokenize(str(raw["prompt"]), normalized_state if self.config.pi05 else None)
+        tokens, token_mask = self.tokenizer.tokenize(
+            str(raw["prompt"]), normalized_state if self.config.discrete_state_input else None
+        )
         base = np.asarray(raw["observation/image"], dtype=np.uint8)
         wrist = np.asarray(raw["observation/wrist_image"], dtype=np.uint8)
 
@@ -156,7 +158,7 @@ class LiberoTransforms:
         if isinstance(prompts, str):
             prompts = [prompts]
         tokens, masks = zip(
-            *(self.tokenizer.tokenize(str(prompt), state_item if self.config.pi05 else None)
+            *(self.tokenizer.tokenize(str(prompt), state_item if self.config.discrete_state_input else None)
               for prompt, state_item in zip(prompts, normalized_state, strict=True))
         )
         base = images(raw["image"])

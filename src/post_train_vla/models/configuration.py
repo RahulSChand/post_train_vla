@@ -30,6 +30,9 @@ class Pi0Config:
     paligemma_variant: str = "gemma_2b"
     action_expert_variant: str = "gemma_300m"
     pi05: bool = False
+    # Pi0.5 normally tokenizes proprioceptive state with the prompt, but the
+    # released pi05_libero configuration deliberately disables that behavior.
+    discrete_state_input: bool | None = None
     max_token_len: int | None = None
     dtype: str = "bfloat16"
     num_inference_steps: int = 10
@@ -46,6 +49,8 @@ class Pi0Config:
             raise ValueError(f"Unsupported action expert variant: {self.action_expert_variant}")
         if self.max_token_len is None:
             object.__setattr__(self, "max_token_len", 200 if self.pi05 else 48)
+        if self.discrete_state_input is None:
+            object.__setattr__(self, "discrete_state_input", self.pi05)
         for name in ("paligemma_lora_rank", "action_expert_lora_rank"):
             rank = getattr(self, name)
             if rank is not None and rank < 1:
@@ -55,13 +60,15 @@ class Pi0Config:
     def from_checkpoint(cls, checkpoint: pathlib.Path, *, pi05: bool | None = None) -> Pi0Config:
         config_path = checkpoint / "config.json"
         values = json.loads(config_path.read_text()) if config_path.is_file() else {}
-        inferred_pi05 = pi05 if pi05 is not None else "pi05" in checkpoint.name.lower()
+        inferred_pi05 = pi05 if pi05 is not None else bool(values.get("pi05", "pi05" in checkpoint.name.lower()))
         return cls(
             action_dim=int(values.get("action_dim", 32)),
             action_horizon=int(values.get("action_horizon", 50)),
             paligemma_variant=values.get("paligemma_variant", "gemma_2b"),
             action_expert_variant=values.get("action_expert_variant", "gemma_300m"),
             pi05=inferred_pi05,
+            discrete_state_input=values.get("discrete_state_input"),
+            max_token_len=int(values["max_token_len"]) if "max_token_len" in values else None,
             dtype=values.get("precision", "bfloat16"),
             paligemma_lora_rank=values.get("paligemma_lora_rank"),
             action_expert_lora_rank=values.get("action_expert_lora_rank"),

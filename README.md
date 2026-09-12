@@ -38,6 +38,45 @@ cd /home/ubuntu/post_train_vla
 Pass `--compile` only after ordinary eager inference works. For pi0.5, use a matching converted checkpoint and
 `--model pi05`.
 
+### Evaluate the prepared pi0.5 base model on LIBERO Spatial
+
+This machine has the raw `pi05_base` weights converted with the official `pi05_libero` model configuration. The
+weights remain the untouched base weights; only the 10-step action horizon, prompt transform, and LIBERO quantile
+normalization assets are environment-specific. Start the policy server with:
+
+```bash
+cd /root/post_train_vla
+.venv/bin/post-vla-serve-torch \
+  --model pi05 \
+  --checkpoint /workspace/post_train_vla_artifacts/checkpoints/pi05_base_pytorch_libero_eval \
+  --tokenizer /root/post_train_vla/assets/paligemma_tokenizer.model \
+  --device cuda
+```
+
+In another terminal, run the complete 50-episode-per-task LIBERO Spatial evaluation without videos:
+
+```bash
+cd /root/openpi_easy
+MUJOCO_GL=egl \
+PYTHONPATH=/root/post_train_vla/src:/root/openpi_easy/third_party/libero \
+  examples/libero/.venv/bin/python -m post_train_vla.eval_libero \
+  --suite libero_spatial \
+  --episodes-per-task 50 \
+  --output-dir /root/post_train_vla/outputs/pi05_base_libero_spatial
+```
+
+For a quick pipeline check, add `--task-id 0 --episodes-per-task 1`. The released `pi05_libero` configuration uses
+`discrete_state_input=false`; this repository reads that value from the converted checkpoint so it does not insert
+proprioceptive state tokens during this evaluation.
+
+For compatibility, the original cache location at
+`/root/.cache/openpi/openpi-assets/checkpoints/pi05_base_pytorch_libero_eval` is a symlink to the checkpoint under
+`/workspace`.
+
+The official LIBERO-fine-tuned pi0.5 checkpoint is also prepared at
+`/workspace/post_train_vla_artifacts/checkpoints/pi05_libero_pytorch`. Use that path in the same server command to
+evaluate the fine-tuned model instead of the untouched base weights.
+
 ### Moving to a new instance after the September 10 fixes
 
 Copy this updated source tree (including `src/`, `tests/`, `pyproject.toml`, and `uv.lock`), the tokenizer, and

@@ -196,6 +196,9 @@ def save_checkpoint(
         config_values.update(
             {
                 "precision": model.config.dtype,
+                "pi05": model.config.pi05,
+                "discrete_state_input": model.config.discrete_state_input,
+                "max_token_len": model.config.max_token_len,
                 "paligemma_lora_rank": model.config.paligemma_lora_rank,
                 "action_expert_lora_rank": model.config.action_expert_lora_rank,
             }
