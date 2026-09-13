@@ -135,6 +135,51 @@ def test_warm_resume_does_not_require_optimizer_file(tmp_path):
     assert read_resume_step(checkpoint, require_optimizer=False) == 15132
 
 
+def test_gradient_accumulation_cli_defaults_to_one():
+    args = finetune.build_parser().parse_args(
+        ["--checkpoint", "model", "--tokenizer", "tokenizer", "--output-dir", "output", "--steps", "1"]
+    )
+
+    assert args.gradient_accumulation_steps == 1
+
+
+def test_gradient_accumulation_cli_accepts_override():
+    args = finetune.build_parser().parse_args(
+        [
+            "--checkpoint",
+            "model",
+            "--tokenizer",
+            "tokenizer",
+            "--output-dir",
+            "output",
+            "--steps",
+            "1",
+            "--gradient-accumulation-steps",
+            "4",
+        ]
+    )
+
+    assert args.gradient_accumulation_steps == 4
+
+
+def test_optimizer_checkpoint_cli_can_be_disabled():
+    args = finetune.build_parser().parse_args(
+        [
+            "--checkpoint",
+            "model",
+            "--tokenizer",
+            "tokenizer",
+            "--output-dir",
+            "output",
+            "--steps",
+            "1",
+            "--no-save-optimizer",
+        ]
+    )
+
+    assert args.save_optimizer is False
+
+
 def test_evaluate_checkpoint_runs_separate_libero_environment(tmp_path, monkeypatch):
     checkpoint = tmp_path / "checkpoint"
     checkpoint.mkdir()

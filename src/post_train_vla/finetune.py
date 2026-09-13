@@ -412,6 +412,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="With --resume, preserve the checkpoint step but initialize a fresh optimizer",
     )
     parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        default=1,
+        help="Accumulate this many microbatches before each optimizer step",
+    )
     parser.add_argument("--learning-rate", type=float, default=5e-5)
     parser.add_argument(
         "--save-every",
@@ -437,6 +443,12 @@ def build_parser() -> argparse.ArgumentParser:
         dest="train_only",
         action="store_true",
         help="Disable in-training evaluation; save resumable checkpoints only at epoch boundaries and the final step.",
+    )
+    parser.add_argument(
+        "--save-optimizer",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include optimizer state in resumable checkpoints (disable for compact evaluation-only checkpoints)",
     )
     parser.add_argument("--eval-every", type=int, default=0, help="Run LIBERO evaluation every N steps (0 disables)")
     parser.add_argument("--eval-episodes", type=int, default=20)
@@ -500,8 +512,8 @@ def configure_lora_trainable_parameters(model: Pi0) -> list[torch.nn.Parameter]:
 
 def main() -> None:
     args = build_parser().parse_args()
-    if args.steps < 1 or args.batch_size < 1:
-        raise ValueError("--steps and --batch-size must be positive")
+    if args.steps < 1 or args.batch_size < 1 or args.gradient_accumulation_steps < 1:
+        raise ValueError("--steps, --batch-size, and --gradient-accumulation-steps must be positive")
     if args.lora and (args.lora_paligemma_rank < 1 or args.lora_action_expert_rank < 1):
         raise ValueError("LoRA ranks must be positive")
     if args.eval_every < 0 or args.eval_episodes < 1:
@@ -565,6 +577,15 @@ def main() -> None:
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, num_workers=args.num_workers)
     if not len(loader):
         raise ValueError("Dataset is smaller than --batch-size with drop_last=True")
+    if len(loader) < args.gradient_accumulation_steps:
+        raise ValueError("Dataset has fewer microbatches than --gradient-accumulation-steps")
+    optimizer_steps_per_epoch = len(loader) // args.gradient_accumulation_steps
+    effective_batch_size = args.batch_size * args.gradient_accumulation_steps
+    print(
+        f"microbatch_size={args.batch_size} gradient_accumulation_steps={args.gradient_accumulation_steps} "
+        f"effective_batch_size={effective_batch_size} optimizer_steps_per_epoch={optimizer_steps_per_epoch}",
+        flush=True,
+    )
     iterator = iter(loader)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.save_every < 1:
@@ -580,6 +601,10 @@ def main() -> None:
             key: str(value) if isinstance(value, pathlib.Path) else value
             for key, value in vars(args).items()
         }
+        wandb_config.update(
+            effective_batch_size=effective_batch_size,
+            optimizer_steps_per_epoch=optimizer_steps_per_epoch,
+        )
         wandb_run = wandb.init(
             entity=args.wandb_entity,
             project=args.wandb_project,
@@ -592,23 +617,28 @@ def main() -> None:
 
     try:
         for step in range(initial_step + 1, args.steps + 1):
-            try:
-                batch = next(iterator)
-            except StopIteration:
-                iterator = iter(loader)
-                batch = next(iterator)
-            observation, actions = transforms.encode_training_batch(
-                batch, device, extra_delta_actions=extra_delta_actions
-            )
-            loss = model.loss(observation, actions).mean()
-            loss.backward()
+            loss_value = 0.0
+            for _ in range(args.gradient_accumulation_steps):
+                try:
+                    batch = next(iterator)
+                except StopIteration:
+                    iterator = iter(loader)
+                    batch = next(iterator)
+                observation, actions = transforms.encode_training_batch(
+                    batch, device, extra_delta_actions=extra_delta_actions
+                )
+                microbatch_loss = model.loss(observation, actions).mean()
+                loss_value += microbatch_loss.item() / args.gradient_accumulation_steps
+                (microbatch_loss / args.gradient_accumulation_steps).backward()
+                del microbatch_loss, observation, actions, batch
             grad_norm = torch.nn.utils.clip_grad_norm_(parameters, 1.0)
             optimizer.step()
             optimizer.zero_grad(set_to_none=True)
             metrics = {
-                "train/loss": loss.item(),
+                "train/loss": loss_value,
                 "train/learning_rate": args.learning_rate,
                 "train/grad_norm": float(grad_norm),
+                "train/effective_batch_size": effective_batch_size,
             }
             if device.type == "cuda":
                 metrics["train/gpu_peak_memory_gib"] = torch.cuda.max_memory_allocated(device) / 2**30
@@ -617,14 +647,14 @@ def main() -> None:
                 if "train/gpu_peak_memory_gib" in metrics
                 else ""
             )
-            print(f"step={step} loss={loss.item():.6f}{memory_message}", flush=True)
+            print(f"step={step} loss={loss_value:.6f}{memory_message}", flush=True)
             should_evaluate = bool(args.eval_every and step % args.eval_every == 0)
-            epoch_complete = step % len(loader) == 0
+            epoch_complete = step % optimizer_steps_per_epoch == 0
             final_step = step == args.steps
             periodic_save = step % args.save_every == 0
             should_save = periodic_save or final_step or should_evaluate or (args.train_only and epoch_complete)
             if should_save:
-                resumable = not args.train_only or epoch_complete or final_step
+                resumable = args.save_optimizer and (not args.train_only or epoch_complete or final_step)
                 saved = save_checkpoint(
                     model,
                     optimizer,
@@ -637,7 +667,6 @@ def main() -> None:
             if should_evaluate:
                 # The evaluator loads a second copy of the checkpoint in its policy
                 # server. Release references to the completed training graph first.
-                del loss, observation, actions, batch
                 if device.type == "cuda":
                     torch.cuda.empty_cache()
                 evaluation_started = time.monotonic()
