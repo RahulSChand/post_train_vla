@@ -265,7 +265,7 @@ def _evaluation_environment(openpi_root: pathlib.Path) -> tuple[pathlib.Path, di
     if environment.get("PYTHONPATH"):
         python_paths.append(environment["PYTHONPATH"])
     environment["PYTHONPATH"] = os.pathsep.join(python_paths)
-    environment.setdefault("MUJOCO_GL", "osmesa")
+    environment.setdefault("MUJOCO_GL", "egl")
     environment.setdefault("PYOPENGL_PLATFORM", environment["MUJOCO_GL"])
     for thread_variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
         environment.setdefault(thread_variable, "1")
@@ -279,7 +279,7 @@ def _run_libero_evaluation(
     eval_python: pathlib.Path,
     openpi_root: pathlib.Path,
     suite: str,
-    task_id: int,
+    task_id: int | None,
     episodes: int,
     save_video: bool,
     eval_workers: int,
@@ -293,13 +293,13 @@ def _run_libero_evaluation(
         policy_url,
         "--suite",
         suite,
-        "--task-id",
-        str(task_id),
         "--episodes-per-task",
         str(episodes),
         "--output-dir",
         str(evaluation_dir),
     ]
+    if task_id is not None:
+        evaluator_command.extend(("--task-id", str(task_id)))
     if eval_workers > 1:
         evaluator_command.extend(("--workers", str(eval_workers)))
     if save_video:

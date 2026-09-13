@@ -147,7 +147,10 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
 
                     chunker = ActionChunker(config.replan_steps)
                     while not success and policy_steps < MAX_STEPS[config.suite]:
-                        policy_observation = make_policy_observation(observation, prompt, config.resize_size)
+                        # Intermediate actions use the existing chunk. Only prepare
+                        # images on those steps when a video needs the frame.
+                        if chunker.empty() or config.save_video:
+                            policy_observation = make_policy_observation(observation, prompt, config.resize_size)
                         if config.save_video:
                             frames.append(policy_observation["observation/image"])
                         if chunker.empty():

@@ -26,7 +26,12 @@ def _parse_args():
     parser.add_argument("--max-batch-size", type=int, default=20)
     parser.add_argument("--batch-wait-ms", type=float, default=10.0)
     parser.add_argument("--suite", default="libero_spatial")
-    parser.add_argument("--task-id", type=int, default=0)
+    parser.add_argument(
+        "--task-id",
+        type=int,
+        default=None,
+        help="Evaluate one task ID; omit to evaluate every task in the suite",
+    )
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--pi05", action="store_true")
@@ -56,12 +61,13 @@ def _checkpoint_steps(checkpoints_dir: pathlib.Path, every: int) -> list[int]:
     )
 
 
-def _summary_is_complete(summary: dict, *, episodes: int, suite: str, task_id: int) -> bool:
+def _summary_is_complete(summary: dict, *, episodes: int, suite: str, task_id: int | None) -> bool:
     config = summary.get("config", {})
+    expected_total = episodes if task_id is not None else episodes * 10
     return (
-        summary.get("episodes") == episodes
+        summary.get("episodes") == expected_total
         and summary.get("suite") == suite
-        and config.get("task_ids") == [task_id]
+        and config.get("task_ids") == ([task_id] if task_id is not None else None)
         and config.get("episodes_per_task") == episodes
         and config.get("episode_offset") == 0
     )

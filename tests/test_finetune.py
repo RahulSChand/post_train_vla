@@ -17,6 +17,17 @@ class _Tokenizer:
         return np.zeros(48, dtype=np.int64), np.ones(48, dtype=bool)
 
 
+@pytest.mark.parametrize("backend", [None, "osmesa"])
+def test_evaluation_rendering_defaults_to_egl_and_allows_cpu_override(monkeypatch, tmp_path, backend):
+    monkeypatch.delenv("MUJOCO_GL", raising=False)
+    monkeypatch.delenv("PYOPENGL_PLATFORM", raising=False)
+    if backend is not None:
+        monkeypatch.setenv("MUJOCO_GL", backend)
+    _, environment = finetune._evaluation_environment(tmp_path)
+    assert environment["MUJOCO_GL"] == (backend or "egl")
+    assert environment["PYOPENGL_PLATFORM"] == (backend or "egl")
+
+
 def test_encode_training_batch_pads_libero_actions():
     transforms = object.__new__(LiberoTransforms)
     transforms.config = Pi0Config()

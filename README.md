@@ -195,19 +195,105 @@ Run one smoke episode in another terminal:
 Results are written to `outputs/smoke/episodes.jsonl` and `outputs/smoke/summary.json`. Pass `--save-video` to the
 script to record a rollout. Remove `--task-id 0` and increase `--episodes-per-task` for complete evaluation.
 
-For fast evaluation of all periodic checkpoints, run 20 LIBERO environments concurrently and batch their policy
-requests on the GPU:
+### Current method: EGL and preprocessing only when replanning
+
+The command structure is unchanged. Checkpoint sweeps and training-time evaluation now default to EGL;
+preprocessing runs only when requesting a new action chunk. Explicitly setting both rendering variables below
+also overrides any old `osmesa` settings inherited from your shell.
+
+For the existing pi0.5 checkpoint sweep on this machine:
 
 ```bash
-post-vla-eval-checkpoints \
-  --checkpoints-dir /home/ubuntu/post_train_vla/outputs/finetune_bs14_4epochs \
+cd /home/ubuntu/post_train_vla
+MUJOCO_GL=egl PYOPENGL_PLATFORM=egl \
+  .venv/bin/python -m post_train_vla.eval_checkpoints \
+  --checkpoints-dir /home/ubuntu/checkpoints/pi05_libero_spatial_bs40_2epochs \
   --tokenizer /home/ubuntu/post_train_vla/assets/paligemma_tokenizer.model \
-  --every 500 --episodes 20 --workers 20 --max-batch-size 20
+  --every 1 --episodes 40 --workers 24 --max-batch-size 24 \
+  --suite libero_spatial --pi05
 ```
 
-The sweep is resumable: checkpoints with a complete 20-episode `summary.json` are skipped. Results are written
-under `CHECKPOINTS_DIR/eval/step_NNNNNN/`, with an aggregate summary at `CHECKPOINTS_DIR/eval/summary.json`. One
-policy server stays alive for the sweep and hot-loads subsequent checkpoints, avoiding repeated model construction.
+`--every 1` selects every numeric checkpoint directory. `--episodes` is per task; omitting `--task-id` evaluates
+all ten Spatial tasks (400 episodes per checkpoint above). Add `--task-id 0` for task 0 only. Use your own
+checkpoint directory and omit `--pi05` for pi0 checkpoints.
+
+The sweep skips checkpoints whose saved summaries already match the requested task scope and episode count.
+Results are written under `CHECKPOINTS_DIR/eval/step_NNNNNN/`, with an aggregate summary at
+`CHECKPOINTS_DIR/eval/summary.json`. Changing renderer or preprocessing does **not** invalidate saved summaries.
+Use the single-checkpoint commands below with a fresh output directory when comparing methods or rerunning
+an already completed checkpoint. One policy server stays alive during a sweep and hot-loads subsequent weights.
+
+On the 40 GB A100, start with 24 workers / max batch 24 for a 40-episode-per-task run. A short concurrency
+check sampled 27.5 GiB with these settings, versus 38.6 GiB with 40 workers / max batch 32. These are observed
+values, not guaranteed memory limits. For 20 episodes, 20 workers are sufficient.
+
+EGL requires NVIDIA's OpenGL/EGL userspace libraries matching the installed driver, in addition to CUDA. The
+matching packages are `libnvidia-gl-580-server` and `libnvidia-common-580-server`, version
+`580.105.08-0lambda0.22.04.1` on this instance; these are already installed. Match the actual driver version
+when setting up another machine.
+
+Without videos, policy observation preprocessing runs only when requesting a new action chunk (every five
+simulation steps by default). Video recording still prepares every frame. Physics and camera observations
+continue to update on every simulation step; the action sequence and replanning interval are unchanged.
+
+### One checkpoint, 20 episodes, Spatial task 0
+
+Start the server in one terminal (stop any other server on port 8001 first):
+
+```bash
+cd /home/ubuntu/post_train_vla
+.venv/bin/python -m post_train_vla.serve_torch \
+  --checkpoint /home/ubuntu/checkpoints/pi05_libero_spatial_bs40_2epochs/1750 \
+  --tokenizer assets/paligemma_tokenizer.model --model pi05 \
+  --device cuda --host 127.0.0.1 --port 8001 \
+  --max-batch-size 32 --batch-wait-ms 10
+```
+
+Then run the current method in another terminal. Choose an unused `--output-dir` on each rerun:
+
+```bash
+cd /home/ubuntu/post_train_vla
+MUJOCO_GL=egl PYOPENGL_PLATFORM=egl \
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
+PYTHONPATH=/home/ubuntu/post_train_vla/src:/home/ubuntu/openpi_easy/third_party/libero \
+  /home/ubuntu/openpi_easy/examples/libero/.venv/bin/python -m post_train_vla.eval_libero \
+  --policy-url ws://127.0.0.1:8001 --suite libero_spatial --task-id 0 \
+  --episodes-per-task 20 --episode-offset 0 --seed 7 --workers 20 --replan-steps 5 \
+  --output-dir /home/ubuntu/post_train_vla/outputs/step1750_task0_20ep_egl
+```
+
+### Previous method: OSMesa and preprocessing every step
+
+The previous implementation used `MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa` and prepared policy observations
+on every simulation step, while still requesting inference every five steps. Setting only the rendering
+variables on current code selects CPU rendering but **does not** restore the old preprocessing behavior.
+Do not change `--replan-steps` to 1: that changes policy behavior and is not the old method.
+
+The pre-optimization evaluator is preserved in commit `53d5c23`. Extract it into a separate directory to
+run the old method without changing your working tree. This also works on a fresh clone with that commit's
+history available. With the same server command above:
+
+```bash
+cd /home/ubuntu/post_train_vla
+mkdir -p outputs/legacy_53d5c23
+git archive 53d5c23 src/post_train_vla | tar -x -C outputs/legacy_53d5c23
+MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa \
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
+PYTHONPATH=/home/ubuntu/post_train_vla/outputs/legacy_53d5c23/src:/home/ubuntu/openpi_easy/third_party/libero \
+  /home/ubuntu/openpi_easy/examples/libero/.venv/bin/python -m post_train_vla.eval_libero \
+  --policy-url ws://127.0.0.1:8001 --suite libero_spatial --task-id 0 \
+  --episodes-per-task 20 --episode-offset 0 --seed 7 --workers 20 --replan-steps 5 \
+  --output-dir /home/ubuntu/post_train_vla/outputs/step1750_task0_20ep_osmesa_previous
+```
+
+Run comparisons sequentially, using a fresh server for each method. The extracted source is under git-ignored
+`outputs/`; it can be recreated from the pinned commit on another machine.
+
+The September 13 paired run took 83.7s with the previous method and 51.2s with the current method: 1.63x
+evaluation throughput, or 38.8% less time. Successes were 19/20 and 18/20 respectively; one pair of runs does
+not establish success-rate parity. See the [tracked benchmark report](docs/eval_performance_20260913.md).
+Full local logs and the runner that seeds both fresh servers with 7 are retained under
+`outputs/task0_method_comparison.nUrUBo/`; those generated artifacts are not included in Git.
 
 ## Verification
 
