@@ -110,6 +110,28 @@ The minimal trainer uses the same LeRobot field layout as OpenPI's LIBERO conver
 `state`, `action`, and `task_index`. It saves standalone checkpoints which can be served and evaluated by this
 repository directly.
 
+### Trajectory-budget sample-efficiency runs
+
+`post-vla-sample-efficiency` runs independent full-model fine-tunes from the converted base checkpoint for nested
+trajectory budgets. A seed-backed manifest fixes the exact episode IDs across pi0 and pi0.5. Each completed epoch
+is evaluated on 20 rollouts of LIBERO Spatial task 0, uploaded to Hugging Face without optimizer state, verified,
+and then deleted locally. Training stops after at least three epochs once three consecutive epochs fail to improve
+on the best task-0 success count, with a hard limit of 20 epochs.
+
+The prepared launcher uses budgets `5 10 15 25 50`, seed 42, microbatch 8, gradient accumulation 6 (effective
+batch 48), and full-model fine-tuning:
+
+```bash
+scripts/run_sample_efficiency.sh pi0
+scripts/run_sample_efficiency.sh pi05
+```
+
+The checkpoints are uploaded to `Chand0320/pi0-libero-spatial-trajectory-efficiency` and
+`Chand0320/pi05-libero-spatial-trajectory-efficiency`, under paths such as
+`trajectories-005/epoch-001/`. The shared manifest is uploaded at the repository root and copied into every epoch
+checkpoint. Since optimizer state is never saved, an interrupted trajectory-budget run must restart that budget
+from the base checkpoint.
+
 ```bash
 cd /home/ubuntu/post_train_vla
 uv sync --extra model --extra train

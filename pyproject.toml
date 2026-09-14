@@ -35,6 +35,7 @@ post-vla-eval-libero = "post_train_vla.eval_libero:main"
 post-vla-eval-checkpoints = "post_train_vla.eval_checkpoints:main"
 post-vla-serve-torch = "post_train_vla.serve_torch:main"
 post-vla-finetune = "post_train_vla.finetune:main"
+post-vla-sample-efficiency = "post_train_vla.sample_efficiency:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/post_train_vla"]
