@@ -317,6 +317,26 @@ not establish success-rate parity. See the [tracked benchmark report](docs/eval_
 Full local logs and the runner that seeds both fresh servers with 7 are retained under
 `outputs/task0_method_comparison.nUrUBo/`; those generated artifacts are not included in Git.
 
+## GR00T saved-checkpoint evaluation
+
+Use `scripts/evaluate_saved_groot.py` for saved GR00T checkpoints and `scripts/report_saved_groot.py` for
+validation, JSON/CSV exports, and plots. Run them with the model environment from `/root/minimal-groot`:
+
+```bash
+/root/minimal-groot/.venv/bin/python scripts/evaluate_saved_groot.py campaign --out /path/to/evaluation
+/root/minimal-groot/.venv/bin/python scripts/report_saved_groot.py --out /path/to/evaluation
+```
+
+The evaluation directory must contain `run_manifest.json`, `initial_states.json`, and pinned checkpoint
+metadata under `inventory/`. This workflow covers all ten LIBERO Spatial tasks with 40 episodes per task.
+The manifest assigns checkpoints to GPUs; each GPU evaluates one checkpoint at a time. Saved configuration,
+processor, embodiment mappings, and normalization statistics are required and verified before inference.
+Completed checkpoints are skipped when resuming. Use a new output directory when changing the protocol.
+Add `--model-epochs-only` to the reporter command to generate one success-versus-epoch chart per model from an
+existing `summary.json`. Stars mark each trajectory count's highest measured success rate, with earliest-epoch ties.
+Use `--trajectory-epochs-only` for five charts grouped by trajectory count, with one line per model.
+Both epoch plotting modes accept `--versions` (for example, `--versions 1.5 1.6 1.7`) to select a subset.
+
 ## Verification
 
 ```bash
