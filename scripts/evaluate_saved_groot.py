@@ -23,12 +23,17 @@ import subprocess
 import sys
 import time
 import traceback
+
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 GROOT = Path('/root/minimal-groot')
 SIM_PYTHON = GROOT / 'gr00t/eval/sim/LIBERO/libero_uv/.venv/bin/python'
-sys.path[:0] = [str(ROOT / 'src'), str(GROOT)]
+sys.path.insert(0, str(ROOT / 'src'))
+if len(sys.argv) < 2 or sys.argv[1] != 'native':
+    sys.path.insert(1, str(GROOT))
+
+from post_train_vla.groot_noise import seeded_noise_mode
 FAILURE_KEYS = ('missing_keys', 'unexpected_keys', 'mismatched_keys', 'error_msgs')
 
 
@@ -122,36 +127,6 @@ def verify_checkpoint(out, checkpoint):
                 metadata_reconstructed=False, model_type=config['model_type'],
                 action_horizon=config['action_horizon'], embodiment_tag=tag, embodiment_id=ids[tag],
                 verified_at=timestamp())
-
-
-def seeded_noise_mode(seeds):
-    """Generate each row independently, so request arrival order cannot alter noise."""
-    import torch
-    from torch.overrides import TorchFunctionMode
-
-    class SeededNoise(TorchFunctionMode):
-        draws = 0
-
-        def __torch_function__(self, func, types, args=(), kwargs=None):
-            kwargs = kwargs or {}
-            if func is torch.randn:
-                shape = tuple(kwargs.get('size', args[0] if len(args) == 1 else args))
-                if len(shape) != 3 or shape[0] != len(seeds) or self.draws:
-                    raise ValueError(f'Unexpected inference noise draw: {shape}, draw={self.draws}')
-                self.draws += 1
-                options = {k: v for k, v in kwargs.items() if k != 'size'}
-                if 'generator' in options:
-                    raise ValueError('Checkpoint supplies its own generator')
-                rows = []
-                for seed in seeds:
-                    generator = torch.Generator(device=options.get('device', 'cpu')).manual_seed(seed)
-                    rows.append(torch.randn((1, *shape[1:]), generator=generator, **options))
-                return torch.cat(rows, dim=0)
-            if func in (torch.rand, torch.randn_like, torch.rand_like, torch.bernoulli):
-                raise ValueError(f'Unexpected stochastic inference operation: {func}')
-            return func(*args, **kwargs)
-
-    return SeededNoise()
 
 
 def load_policy(out, checkpoint, destination):
@@ -514,7 +489,11 @@ def run_campaign(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    if len(sys.argv) > 1 and sys.argv[1] == 'native':
+        from post_train_vla.groot_evaluation import main as native_main
+        native_main(sys.argv[2:])
+        return
+    parser = argparse.ArgumentParser(description=__doc__, epilog='Use native --help for version-native checkpoint evaluation.')
     parser.add_argument('mode', choices=['campaign', 'model', 'sim'])
     parser.add_argument('--out', type=Path, required=True, help='Prepared evaluation directory containing run_manifest.json')
     parser.add_argument('--key')

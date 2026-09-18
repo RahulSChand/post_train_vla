@@ -18,6 +18,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+report = ["matplotlib>=3.6"]
+publish = ["huggingface-hub>=0.27"]
 model = [
     "safetensors>=0.4.5",
     "sentencepiece>=0.2.0",

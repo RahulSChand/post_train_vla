@@ -44,14 +44,15 @@ def plot_epoch_curves(checkpoints, plots, group_by='version', versions=None):
     """Group epoch curves by model or trajectory count; mark measured maxima."""
     versions = VERSIONS if versions is None else versions
     if group_by == 'version':
-        groups, series_key, series_values = versions, 'trajectory_count', BUDGETS
-        colors = dict(zip(BUDGETS, TRAJECTORY_COLORS))
-        series_labels = {budget: str(budget) for budget in BUDGETS}
+        budgets = sorted({r['trajectory_count'] for r in checkpoints})
+        groups, series_key, series_values = versions, 'trajectory_count', budgets
+        colors = {budget: TRAJECTORY_COLORS[i % len(TRAJECTORY_COLORS)] for i, budget in enumerate(budgets)}
+        series_labels = {budget: str(budget) for budget in budgets}
         legend_title = 'Training trajectories'
         subtitle = 'Each line is a different number of training trajectories · stars mark the best checkpoint'
         peaks_filename = 'success_by_epoch_peaks.json'
     elif group_by == 'trajectory_count':
-        groups, series_key, series_values = BUDGETS, 'version', versions
+        groups, series_key, series_values = sorted({r['trajectory_count'] for r in checkpoints}), 'version', versions
         colors = dict(zip(VERSIONS, COLORS))
         series_labels = {version: 'GR00T N'+version for version in versions}
         legend_title = 'Model'
@@ -59,6 +60,11 @@ def plot_epoch_curves(checkpoints, plots, group_by='version', versions=None):
         peaks_filename = 'success_by_epoch_trajectory_peaks.json'
     else:
         raise ValueError(f'Unsupported epoch grouping: {group_by}')
+    identities = [(r['version'], r['trajectory_count'], r['epoch']) for r in checkpoints]
+    if len(identities) != len(set(identities)):
+        raise ValueError('Duplicate model/trajectory/epoch results')
+    if any(r['version'] not in VERSIONS or r['epoch'] < 1 for r in checkpoints):
+        raise ValueError('Unsupported model version or invalid epoch')
     plots.mkdir(parents=True, exist_ok=True)
     peaks = []
     with plt.rc_context({'font.family': 'DejaVu Sans', 'font.size': 12,
@@ -68,8 +74,8 @@ def plot_epoch_curves(checkpoints, plots, group_by='version', versions=None):
             rows = [r for r in checkpoints if r[group_by] == group and r['version'] in versions]
             if not rows:
                 continue
-            if any(r['episodes'] != 400 or not np.isclose(r['success_rate'], r['successes']/400) for r in rows):
-                raise ValueError('Epoch charts require verified 400-episode success rates')
+            if any(r['episodes'] <= 0 or not 0 <= r['successes'] <= r['episodes'] or not np.isclose(r['success_rate'], r['successes']/r['episodes']) for r in rows):
+                raise ValueError('Epoch charts require valid measured success counts and episode denominators')
             maximum_epoch = max(r['epoch'] for r in rows)
             fig, ax = plt.subplots(figsize=(12.8, 7.75), dpi=160)
             fig.subplots_adjust(left=.082, right=.985, bottom=.15, top=.79)
@@ -99,7 +105,7 @@ def plot_epoch_curves(checkpoints, plots, group_by='version', versions=None):
                         markerfacecolor='none' if group_by == 'trajectory_count' else color,
                         markeredgecolor=color if group_by == 'trajectory_count' else 'white',
                         markeredgewidth=1.4, label=series_labels[series], clip_on=False)
-                peak = max(points, key=lambda r: (r['successes'], -r['epoch']))
+                peak = max(points, key=lambda r: (r['success_rate'], -r['epoch']))
                 rate = 100*peak['success_rate']
                 labels.setdefault((peak['epoch'], rate), []).append((series, color))
                 peaks.append({k: peak[k] for k in ('version', 'trajectory_count', 'epoch', 'successes', 'episodes', 'success_rate')})
@@ -113,7 +119,7 @@ def plot_epoch_curves(checkpoints, plots, group_by='version', versions=None):
             fig.text(.082, .895, subtitle,
                      fontsize=12.5, color='#64748b', va='top')
             fig.text(.082, .045, 'Stars: highest measured success; earliest epoch on ties.', fontsize=9, color='#64748b')
-            fig.text(.985, .045, '400 evaluation episodes per checkpoint', ha='right', fontsize=10.5, color='#64748b')
+            fig.text(.985, .045, 'Evaluation episodes/checkpoint: '+', '.join(str(n) for n in sorted({r['episodes'] for r in rows})), ha='right', fontsize=10.5, color='#64748b')
             fig.canvas.draw()
             renderer = fig.canvas.get_renderer()
             occupied = []
@@ -147,7 +153,7 @@ def plot_epoch_curves(checkpoints, plots, group_by='version', versions=None):
                 fig.savefig(plots / f'{stem}.{extension}', facecolor='white')
             plt.close(fig)
     write_json(plots / peaks_filename, {
-        'selection': 'Highest measured success in the 400-episode evaluation; earliest epoch on ties.',
+        'selection': 'Highest measured success rate; earliest epoch on ties.',
         'group_by': group_by, 'versions': versions,
         'peaks': peaks})
 
@@ -480,8 +486,22 @@ if __name__ == '__main__':
     epoch_plots.add_argument('--model-epochs-only', action='store_true', help='Plot per-model epoch curves from an existing summary.json')
     epoch_plots.add_argument('--trajectory-epochs-only', action='store_true', help='Plot one model-comparison epoch chart per trajectory count from an existing summary.json')
     parser.add_argument('--versions', nargs='+', choices=VERSIONS, help='Models to include when plotting epoch curves (default: all four)')
+    parser.add_argument('--trajectory-count', type=int, help='Training trajectory count for JSON records lacking it')
+    epoch_plots.add_argument('--success-json', type=Path, help='Plot exported model/epoch/successes/episodes records')
     args = parser.parse_args()
     out = args.out.resolve()
+    if args.success_json:
+        raw = read_json(args.success_json)
+        records = []
+        for row in raw:
+            count = row.get('trajectory_count', args.trajectory_count)
+            if count is None or count < 1:
+                parser.error('--trajectory-count is required when JSON records omit it')
+            records.append(dict(version=row['model'].removeprefix('N'), trajectory_count=count,
+                                epoch=row['epoch'], successes=row['successes'], episodes=row['episodes'],
+                                success_rate=row['success_rate_percent']/100))
+        plot_epoch_curves(records, out / 'plots', group_by='trajectory_count', versions=args.versions)
+        raise SystemExit(0)
     if args.versions and not (args.model_epochs_only or args.trajectory_epochs_only):
         parser.error('--versions requires --model-epochs-only or --trajectory-epochs-only')
     if args.model_epochs_only or args.trajectory_epochs_only:
