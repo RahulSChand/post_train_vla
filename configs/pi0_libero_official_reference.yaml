@@ -1,0 +1,64 @@
+# Reference only — this records the official OpenPI JAX `pi0_libero` configuration.
+# It is intentionally NOT accepted by `post-vla-finetune --config`: that trainer
+# does not currently implement the official cosine LR schedule, EMA, or AdamW
+# beta/weight-decay settings. Do not treat a PyTorch run as an exact reproduction
+# unless those features are implemented.
+#
+# Source: ../openpi/src/openpi/training/config.py (`pi0_libero`) and
+# ../openpi/src/openpi/training/optimizer.py.
+
+official_pi0_libero:
+  runner:
+    implementation: JAX/Flax OpenPI
+    command: >-
+      XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 uv run scripts/train.py pi0_libero
+      --exp-name=my_experiment --overwrite
+
+  initialization:
+    checkpoint: gs://openpi-assets/checkpoints/pi0_base/params
+    full_model_finetune: true
+    lora: false
+
+  dataset:
+    repo_id: physical-intelligence/libero
+    prompt_from_task: true
+    extra_delta_transform: true
+    normalization: z_score
+
+  model:
+    type: pi0
+    precision: bfloat16
+    action_dim: 32
+    action_horizon: 50
+    max_token_len: 48
+    discrete_state_input: false
+
+  training:
+    seed: 42
+    global_batch_size: 32
+    num_workers: 2
+    num_train_steps: 30000
+    log_interval: 100
+    save_interval: 1000
+    keep_period: 5000
+    ema_decay: 0.99
+
+  optimizer:
+    type: AdamW
+    beta1: 0.9
+    beta2: 0.95
+    epsilon: 1.0e-8
+    weight_decay: 1.0e-10
+    global_gradient_clip_norm: 1.0
+
+  learning_rate_schedule:
+    type: cosine_decay_with_linear_warmup
+    warmup_steps: 1000
+    initial_learning_rate: 2.4975024975024976e-8 # peak_lr / (warmup_steps + 1)
+    peak_learning_rate: 2.5e-5
+    decay_steps: 30000
+    final_learning_rate: 2.5e-6
+
+  logging:
+    wandb_enabled: true
+    wandb_project: openpi

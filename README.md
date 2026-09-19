@@ -128,6 +128,10 @@ Start from [`configs/full_dataset.example.yaml`](configs/full_dataset.example.ya
 [`configs/trajectory_efficiency.example.yaml`](configs/trajectory_efficiency.example.yaml), copy it to a run-specific
 filename, and commit that file with the experiment notes.
 
+[`configs/pi0_libero_official_reference.yaml`](configs/pi0_libero_official_reference.yaml) records the official
+OpenPI JAX `pi0_libero` recipe for comparison. It is a reference file, not a runnable configuration for this PyTorch
+trainer: its cosine learning-rate schedule, EMA, and AdamW settings are not yet implemented here.
+
 ### Trajectory-budget sample-efficiency runs
 
 `post-vla-sample-efficiency` runs independent full-model fine-tunes from the converted base checkpoint for nested
