@@ -24,6 +24,12 @@ from post_train_vla.torch_policy import find_norm_stats
 from post_train_vla.transforms import LiberoTransforms
 
 MANIFEST_VERSION = 1
+ACTION_PARAMETER_PREFIXES = (
+    "paligemma_with_expert.gemma_expert.",
+    "action_",
+    "state_proj",
+    "time_mlp_",
+)
 
 
 @dataclass(frozen=True)
@@ -146,12 +152,23 @@ def _set_seed(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def configure_trainable_parameters(model: Pi0, *, freeze_vlm: bool) -> list[torch.nn.Parameter]:
+    """Select either the full model or only the non-VLM action pathway for training."""
+    for name, parameter in model.named_parameters():
+        parameter.requires_grad = not freeze_vlm or name.startswith(ACTION_PARAMETER_PREFIXES)
+    parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    if not parameters:
+        raise ValueError("The requested freeze policy left no trainable parameters")
+    return parameters
+
+
 def _upload_and_verify(
     checkpoint: pathlib.Path,
     *,
     api,
     repo_id: str,
     path_in_repo: str,
+    include_evaluation: bool,
 ) -> None:
     api.upload_folder(
         repo_id=repo_id,
@@ -165,11 +182,16 @@ def _upload_and_verify(
         f"{path_in_repo}/model.safetensors",
         f"{path_in_repo}/config.json",
         f"{path_in_repo}/metadata.json",
-        f"{path_in_repo}/evaluation/summary.json",
-        f"{path_in_repo}/evaluation/episodes.jsonl",
         f"{path_in_repo}/trajectory_manifest.json",
         f"{path_in_repo}/assets/physical-intelligence/libero/norm_stats.json",
     }
+    if include_evaluation:
+        required.update(
+            {
+                f"{path_in_repo}/evaluation/summary.json",
+                f"{path_in_repo}/evaluation/episodes.jsonl",
+            }
+        )
     missing = sorted(required.difference(remote_files))
     if missing:
         raise RuntimeError(f"Hugging Face upload verification failed; missing files: {missing}")
@@ -187,8 +209,8 @@ def _build_model(args: argparse.Namespace, checkpoint: pathlib.Path) -> tuple[Pi
     config = Pi0Config.from_checkpoint(checkpoint, pi05=args.model == "pi05")
     model = Pi0(config)
     safetensors.torch.load_model(model, str(checkpoint / "model.safetensors"), strict=True)
+    parameters = configure_trainable_parameters(model, freeze_vlm=args.freeze_vlm)
     model.to(args.device).train()
-    parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
     model.set_gradient_checkpointing(args.gradient_checkpointing)
     return model, parameters
 
@@ -283,7 +305,10 @@ def run_budget(
         f"budget={budget} trajectories frames={len(dataset)} microbatch_size={args.batch_size} "
         f"gradient_accumulation_steps={args.gradient_accumulation_steps} "
         f"effective_batch_size={args.batch_size * args.gradient_accumulation_steps} "
-        f"optimizer_steps_per_epoch={math.ceil(len(loader) / args.gradient_accumulation_steps)}",
+        f"optimizer_steps_per_epoch={math.ceil(len(loader) / args.gradient_accumulation_steps)} "
+        f"freeze_vlm={args.freeze_vlm} "
+        f"trainable_parameters={sum(parameter.numel() for parameter in parameters)} "
+        f"total_parameters={sum(parameter.numel() for parameter in model.parameters())}",
         flush=True,
     )
 
@@ -316,37 +341,42 @@ def run_budget(
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            summary = evaluate_checkpoint(
-                checkpoint_dir,
-                args.tokenizer.expanduser().resolve(),
-                global_step,
-                run_dir,
-                eval_python=args.eval_python.expanduser(),
-                openpi_root=args.openpi_root.expanduser().resolve(),
-                suite="libero_spatial",
-                task_id=0,
-                episodes=20,
-                save_video=False,
-                port=args.eval_port,
-                server_timeout=args.eval_server_timeout,
-                device=args.device,
-                pi05=args.model == "pi05",
-                eval_workers=args.eval_workers,
-                max_batch_size=args.eval_max_batch_size,
-                batch_wait_ms=args.eval_batch_wait_ms,
-            )
-            successes = int(summary["successes"])
-            stopping_state = update_early_stopping(stopping_state, epoch=epoch, successes=successes)
             record = {
                 "epoch": epoch,
                 "global_step": global_step,
                 "optimizer_steps": int(optimizer_steps),
                 "train_loss": train_loss,
-                "successes": successes,
-                "episodes": int(summary["episodes"]),
-                "success_rate": float(summary["success_rate"]),
                 "elapsed_seconds": time.monotonic() - epoch_started,
             }
+            if args.evaluate_after_epoch:
+                summary = evaluate_checkpoint(
+                    checkpoint_dir,
+                    args.tokenizer.expanduser().resolve(),
+                    global_step,
+                    run_dir,
+                    eval_python=args.eval_python.expanduser(),
+                    openpi_root=args.openpi_root.expanduser().resolve(),
+                    suite="libero_spatial",
+                    task_id=0,
+                    episodes=20,
+                    save_video=False,
+                    port=args.eval_port,
+                    server_timeout=args.eval_server_timeout,
+                    device=args.device,
+                    pi05=args.model == "pi05",
+                    eval_workers=args.eval_workers,
+                    max_batch_size=args.eval_max_batch_size,
+                    batch_wait_ms=args.eval_batch_wait_ms,
+                )
+                successes = int(summary["successes"])
+                stopping_state = update_early_stopping(stopping_state, epoch=epoch, successes=successes)
+                record.update(
+                    {
+                        "successes": successes,
+                        "episodes": int(summary["episodes"]),
+                        "success_rate": float(summary["success_rate"]),
+                    }
+                )
             epoch_records.append(record)
             metadata_path = checkpoint_dir / "metadata.json"
             checkpoint_metadata = json.loads(metadata_path.read_text())
@@ -363,18 +393,22 @@ def run_budget(
                         "gradient_accumulation_steps": args.gradient_accumulation_steps,
                         "effective_batch_size": args.batch_size * args.gradient_accumulation_steps,
                         "learning_rate": args.learning_rate,
-                        "full_model_finetune": True,
+                        "full_model_finetune": not args.freeze_vlm,
+                        "freeze_vlm": args.freeze_vlm,
+                        "trainable_parameter_count": sum(parameter.numel() for parameter in parameters),
+                        "total_parameter_count": sum(parameter.numel() for parameter in model.parameters()),
                         "optimizer_saved": False,
                     },
-                    "evaluation": record,
+                    "evaluation": record if args.evaluate_after_epoch else None,
                 }
             )
             metadata_path.write_text(json.dumps(checkpoint_metadata, indent=2, sort_keys=True) + "\n")
-            evaluation_dir = checkpoint_dir / "evaluation"
-            evaluation_dir.mkdir()
-            rollout_dir = run_dir / "eval" / f"step_{global_step:06d}"
-            shutil.copy2(rollout_dir / "summary.json", evaluation_dir / "summary.json")
-            shutil.copy2(rollout_dir / "episodes.jsonl", evaluation_dir / "episodes.jsonl")
+            if args.evaluate_after_epoch:
+                evaluation_dir = checkpoint_dir / "evaluation"
+                evaluation_dir.mkdir()
+                rollout_dir = run_dir / "eval" / f"step_{global_step:06d}"
+                shutil.copy2(rollout_dir / "summary.json", evaluation_dir / "summary.json")
+                shutil.copy2(rollout_dir / "episodes.jsonl", evaluation_dir / "episodes.jsonl")
             shutil.copy2(manifest_path, checkpoint_dir / "trajectory_manifest.json")
 
             run_summary = {
@@ -382,14 +416,21 @@ def run_budget(
                 "trajectory_count": budget,
                 "selected_episode_indices": selected_episodes,
                 "trajectory_manifest_sha256": manifest_sha256(manifest_path),
-                "best_epoch": stopping_state.best_epoch,
-                "best_successes": stopping_state.best_successes,
-                "epochs_without_improvement": stopping_state.epochs_without_improvement,
+                "evaluate_after_epoch": args.evaluate_after_epoch,
+                "best_epoch": stopping_state.best_epoch if stopping_state else None,
+                "best_successes": stopping_state.best_successes if stopping_state else None,
+                "epochs_without_improvement": stopping_state.epochs_without_improvement if stopping_state else None,
                 "epochs": epoch_records,
             }
             summary_path = _save_run_summary(run_dir, run_summary)
             path_in_repo = f"trajectories-{budget:03d}/epoch-{epoch:03d}"
-            _upload_and_verify(checkpoint_dir, api=api, repo_id=args.hf_repo_id, path_in_repo=path_in_repo)
+            _upload_and_verify(
+                checkpoint_dir,
+                api=api,
+                repo_id=args.hf_repo_id,
+                path_in_repo=path_in_repo,
+                include_evaluation=args.evaluate_after_epoch,
+            )
             api.upload_file(
                 repo_id=args.hf_repo_id,
                 repo_type="model",
@@ -398,11 +439,9 @@ def run_budget(
                 commit_message=f"Update {budget}-trajectory run summary",
             )
             shutil.rmtree(checkpoint_dir)
-            print(
-                f"uploaded={args.hf_repo_id}/{path_in_repo} deleted_local={checkpoint_dir} successes={successes}/20",
-                flush=True,
-            )
-            if should_stop_early(
+            status = f"successes={successes}/20" if args.evaluate_after_epoch else "evaluation=skipped"
+            print(f"uploaded={args.hf_repo_id}/{path_in_repo} deleted_local={checkpoint_dir} {status}", flush=True)
+            if args.evaluate_after_epoch and should_stop_early(
                 stopping_state,
                 epoch=epoch,
                 minimum_epochs=args.minimum_epochs,
@@ -442,6 +481,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--num-workers", type=int, default=0)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--gradient-checkpointing", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument(
+        "--freeze-vlm",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Freeze PaliGemma and train only the action expert plus action/time/state projections",
+    )
+    parser.add_argument(
+        "--evaluate-after-epoch",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Run the 20-rollout task-0 evaluation and early-stopping check after each epoch",
+    )
     parser.add_argument("--eval-workers", type=int, default=20)
     parser.add_argument("--eval-max-batch-size", type=int, default=8)
     parser.add_argument("--eval-batch-wait-ms", type=float, default=10.0)
@@ -462,9 +513,11 @@ def main() -> None:
         raise ValueError("Trajectory budgets must be positive")
     if args.batch_size < 1 or args.gradient_accumulation_steps < 1:
         raise ValueError("Batch size and gradient accumulation steps must be positive")
-    if args.minimum_epochs < 1 or args.patience < 1 or args.max_epochs < args.minimum_epochs:
+    if args.max_epochs < 1:
+        raise ValueError("--max-epochs must be positive")
+    if args.evaluate_after_epoch and (args.minimum_epochs < 1 or args.patience < 1 or args.max_epochs < args.minimum_epochs):
         raise ValueError("Require max_epochs >= minimum_epochs >= 1 and patience >= 1")
-    if not args.eval_python.is_file():
+    if args.evaluate_after_epoch and not args.eval_python.is_file():
         raise FileNotFoundError(f"LIBERO evaluation Python not found: {args.eval_python}")
     if not args.tokenizer.is_file():
         raise FileNotFoundError(f"Tokenizer not found: {args.tokenizer}")
