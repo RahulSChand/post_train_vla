@@ -1,0 +1,32 @@
+# Copy this file, replace the paths/repository, and launch with:
+# .venv/bin/post-vla-sample-efficiency --config configs/my_trajectory_run.yaml
+
+model: pi0
+checkpoint: /workspace/models/pi0-base-pytorch
+tokenizer: assets/paligemma_tokenizer.model
+dataset_root: /workspace/libero_spatial_post
+manifest: outputs/sample_efficiency/trajectory_manifest_seed42.json
+output_dir: outputs/pi0_trajectory_efficiency
+hf_repo_id: your-hf-user/pi0-libero-spatial-trajectory-efficiency
+
+trajectory_budgets: [5, 10, 15, 25, 50]
+seed: 42
+batch_size: 8
+gradient_accumulation_steps: 6
+learning_rate: 5e-5
+max_epochs: 15
+minimum_epochs: 3
+patience: 2
+num_workers: 0
+device: cuda
+gradient_checkpointing: false
+freeze_vlm: false
+
+evaluate_after_epoch: true
+eval_workers: 20
+eval_max_batch_size: 8
+eval_batch_wait_ms: 10.0
+eval_port: 8765
+eval_server_timeout: 600.0
+eval_python: /root/openpi_easy/examples/libero/.venv/bin/python
+openpi_root: /root/openpi_easy

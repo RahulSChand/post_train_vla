@@ -29,6 +29,7 @@ model = [
 train = [
     "lerobot",
     "pyarrow",
+    "PyYAML>=6.0",
     "wandb",
 ]
 

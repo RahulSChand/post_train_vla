@@ -21,6 +21,7 @@ from torch.utils.data import DataLoader, Subset
 from post_train_vla.finetune import LeRobotLiberoDataset, evaluate_checkpoint, save_checkpoint
 from post_train_vla.models import Pi0, Pi0Config
 from post_train_vla.torch_policy import find_norm_stats
+from post_train_vla.training_config import add_config_argument, parse_args_with_config, write_resolved_config
 from post_train_vla.transforms import LiberoTransforms
 
 MANIFEST_VERSION = 1
@@ -268,6 +269,7 @@ def run_budget(
     manifest: dict,
     manifest_path: pathlib.Path,
     api,
+    run_config: dict,
 ) -> dict:
     checkpoint = args.checkpoint.expanduser().resolve()
     run_dir = args.output_dir / f"trajectories-{budget:03d}"
@@ -333,6 +335,7 @@ def run_budget(
                 run_dir / "checkpoints",
                 checkpoint,
                 include_optimizer=False,
+                run_config=run_config,
             )
             # Full-model Adam training leaves a large CUDA allocator cache after
             # each epoch. Release only that unused cache so the separate policy
@@ -463,6 +466,7 @@ def run_budget(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    add_config_argument(parser)
     parser.add_argument("--model", choices=("pi0", "pi05"), required=True)
     parser.add_argument("--checkpoint", type=pathlib.Path, required=True)
     parser.add_argument("--tokenizer", type=pathlib.Path, required=True)
@@ -508,7 +512,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    args = build_parser().parse_args()
+    args = parse_args_with_config(build_parser())
     if min(args.trajectory_budgets) < 1:
         raise ValueError("Trajectory budgets must be positive")
     if args.batch_size < 1 or args.gradient_accumulation_steps < 1:
@@ -524,6 +528,7 @@ def main() -> None:
     args.dataset_root = args.dataset_root.expanduser().resolve()
     args.output_dir = args.output_dir.expanduser().resolve()
     args.manifest = args.manifest.expanduser().resolve()
+    run_config = write_resolved_config(args.output_dir, args)
 
     from huggingface_hub import HfApi
 
@@ -542,10 +547,26 @@ def main() -> None:
         path_in_repo="trajectory_manifest.json",
         commit_message="Add shared trajectory-selection manifest",
     )
+    api.upload_file(
+        repo_id=args.hf_repo_id,
+        repo_type="model",
+        path_or_fileobj=str(args.output_dir / "run_config.yaml"),
+        path_in_repo="run_config.yaml",
+        commit_message="Add resolved training configuration",
+    )
 
     results = []
     for budget in args.trajectory_budgets:
-        results.append(run_budget(args, budget=budget, manifest=manifest, manifest_path=args.manifest, api=api))
+        results.append(
+            run_budget(
+                args,
+                budget=budget,
+                manifest=manifest,
+                manifest_path=args.manifest,
+                api=api,
+                run_config=run_config,
+            )
+        )
     _save_run_summary(args.output_dir, {"model": args.model, "runs": results})
 
 

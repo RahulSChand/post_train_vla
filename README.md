@@ -110,6 +110,24 @@ The minimal trainer uses the same LeRobot field layout as OpenPI's LIBERO conver
 `state`, `action`, and `task_index`. It saves standalone checkpoints which can be served and evaluated by this
 repository directly.
 
+### Reproducible YAML launches
+
+Both training entrypoints accept `--config PATH.yaml`. The YAML file is a flat mapping whose keys are the long
+argument names with hyphens replaced by underscores. Values in the command line override YAML values, which is useful
+for an intentional one-off change such as `--learning-rate 5e-5`.
+
+```bash
+.venv/bin/post-vla-finetune --config configs/full_dataset.example.yaml
+.venv/bin/post-vla-sample-efficiency --config configs/trajectory_efficiency.example.yaml
+```
+
+Every run writes the final, fully resolved arguments to `OUTPUT_DIR/run_config.yaml`; this includes defaults and CLI
+overrides, not merely the source YAML. Full-dataset checkpoints embed the same record in `metadata.json`. Trajectory
+runs also embed it in each checkpoint and publish `run_config.yaml` at the root of their Hugging Face repository.
+Start from [`configs/full_dataset.example.yaml`](configs/full_dataset.example.yaml) or
+[`configs/trajectory_efficiency.example.yaml`](configs/trajectory_efficiency.example.yaml), copy it to a run-specific
+filename, and commit that file with the experiment notes.
+
 ### Trajectory-budget sample-efficiency runs
 
 `post-vla-sample-efficiency` runs independent full-model fine-tunes from the converted base checkpoint for nested

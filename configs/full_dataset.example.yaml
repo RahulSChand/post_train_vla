@@ -1,0 +1,27 @@
+# Copy this file, replace the paths, and launch with:
+# .venv/bin/post-vla-finetune --config configs/my_full_dataset_run.yaml
+
+checkpoint: /workspace/models/pi0-base-pytorch
+tokenizer: assets/paligemma_tokenizer.model
+dataset_repo: /workspace/libero_spatial_post
+output_dir: outputs/pi0_libero_full_30k
+
+# Training hyperparameters
+steps: 30000
+batch_size: 32
+gradient_accumulation_steps: 1
+learning_rate: 2.5e-5
+save_every: 1000
+seed: 42
+num_workers: 2
+device: cuda
+
+# Checkpointing
+train_only: true
+save_optimizer: true
+
+# Model options
+pi05: false
+lora: false
+heads_only: false
+gradient_checkpointing: false

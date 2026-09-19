@@ -8,6 +8,7 @@ import io
 import json
 import os
 import pathlib
+import random
 import shutil
 import socket
 import subprocess
@@ -22,6 +23,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from post_train_vla.models import Pi0, Pi0Config
 from post_train_vla.torch_policy import find_norm_stats
+from post_train_vla.training_config import add_config_argument, parse_args_with_config, write_resolved_config
 from post_train_vla.transforms import LiberoTransforms
 
 
@@ -61,6 +63,14 @@ class LeRobotLiberoDataset(Dataset):
             "action": actions,
             "prompt": self.meta.tasks[task_index],
         }
+
+
+def _set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 class _LocalLeRobotDataset(Dataset):
@@ -177,6 +187,7 @@ def save_checkpoint(
     source_checkpoint: pathlib.Path,
     *,
     include_optimizer: bool = True,
+    run_config: dict | None = None,
 ) -> pathlib.Path:
     checkpoint = output_dir / str(step)
     temporary = output_dir / f".{step}.tmp"
@@ -186,9 +197,10 @@ def save_checkpoint(
     safetensors.torch.save_model(model, str(temporary / "model.safetensors"))
     if include_optimizer:
         torch.save(optimizer.state_dict(), temporary / "optimizer.pt")
-    (temporary / "metadata.json").write_text(
-        json.dumps({"step": step, "created_at": time.time(), "resumable": include_optimizer}, indent=2) + "\n"
-    )
+    metadata = {"step": step, "created_at": time.time(), "resumable": include_optimizer}
+    if run_config is not None:
+        metadata["run_config"] = run_config
+    (temporary / "metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
     config_values = json.loads((source_checkpoint / "config.json").read_text())
     if isinstance(model, Pi0):
         # A LoRA checkpoint must declare its adapter layout so the standalone
@@ -387,6 +399,7 @@ def evaluate_checkpoint(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    add_config_argument(parser)
     parser.add_argument("--checkpoint", type=pathlib.Path, required=True, help="Converted starting checkpoint")
     parser.add_argument("--tokenizer", type=pathlib.Path, required=True)
     parser.add_argument(
@@ -412,6 +425,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="With --resume, preserve the checkpoint step but initialize a fresh optimizer",
     )
     parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--gradient-accumulation-steps",
         type=int,
@@ -511,7 +525,7 @@ def configure_lora_trainable_parameters(model: Pi0) -> list[torch.nn.Parameter]:
 
 
 def main() -> None:
-    args = build_parser().parse_args()
+    args = parse_args_with_config(build_parser())
     if args.steps < 1 or args.batch_size < 1 or args.gradient_accumulation_steps < 1:
         raise ValueError("--steps, --batch-size, and --gradient-accumulation-steps must be positive")
     if args.lora and (args.lora_paligemma_rank < 1 or args.lora_action_expert_rank < 1):
@@ -526,6 +540,9 @@ def main() -> None:
         if not args.openpi_root.is_dir():
             raise FileNotFoundError(f"OpenPI root not found: {args.openpi_root}")
     checkpoint = args.checkpoint.expanduser().resolve()
+    args.output_dir = args.output_dir.expanduser().resolve()
+    run_config = write_resolved_config(args.output_dir, args)
+    _set_seed(args.seed)
     if args.reset_optimizer and not args.resume:
         raise ValueError("--reset-optimizer requires --resume")
     initial_step = read_resume_step(checkpoint, require_optimizer=not args.reset_optimizer) if args.resume else 0
@@ -574,7 +591,14 @@ def main() -> None:
     transforms = LiberoTransforms(config, find_norm_stats(checkpoint), args.tokenizer)
     extra_delta_actions = not config.pi05 if args.extra_delta_actions is None else args.extra_delta_actions
     dataset = LeRobotLiberoDataset(args.dataset_repo, config.action_horizon)
-    loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, num_workers=args.num_workers)
+    loader = DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        drop_last=True,
+        num_workers=args.num_workers,
+        generator=torch.Generator().manual_seed(args.seed),
+    )
     if not len(loader):
         raise ValueError("Dataset is smaller than --batch-size with drop_last=True")
     if len(loader) < args.gradient_accumulation_steps:
@@ -662,6 +686,7 @@ def main() -> None:
                     args.output_dir,
                     checkpoint,
                     include_optimizer=resumable,
+                    run_config=run_config,
                 )
                 print(f"saved={saved}", flush=True)
             if should_evaluate:
