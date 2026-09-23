@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "experiment": "pi0_libero_object_50_trajectories_8_epochs_full_model",
+  "model": "pi0",
+  "suite": "libero_object",
+  "trajectory_count": 50,
+  "training": {
+    "epochs": 8,
+    "full_model_finetuning": true,
+    "trainable_parameters": 3501372176,
+    "total_parameters": 3501372176,
+    "microbatch_size": 8,
+    "gradient_accumulation_steps": 6,
+    "effective_batch_size": 48,
+    "learning_rate": 0.00005,
+    "seed": 42,
+    "training_frames": 7444,
+    "validation_trajectories": 10,
+    "validation_frames": 1506,
+    "validation_seed": 4242,
+    "manifest_sha256": "f8be64258d4934f2983137120a3a8e178616d97bc53198d65d5ba6b0f3f7ad61",
+    "hugging_face_upload": false,
+    "checkpoints_retained_locally": true,
+    "validation_by_epoch": [
+      {
+        "epoch": 1,
+        "global_step": 156,
+        "train_loss": 0.03295837157171093,
+        "validation_flow_loss": 0.03623107173824303,
+        "validation_action_mse_normalized": 0.17829257831419096
+      },
+      {
+        "epoch": 2,
+        "global_step": 312,
+        "train_loss": 0.022782199894691005,
+        "validation_flow_loss": 0.04848617570999256,
+        "validation_action_mse_normalized": 0.23682744863688665
+      },
+      {
+        "epoch": 3,
+        "global_step": 468,
+        "train_loss": 0.02166288380131015,
+        "validation_flow_loss": 0.03875708761935774,
+        "validation_action_mse_normalized": 0.16667695339147612
+      },
+      {
+        "epoch": 4,
+        "global_step": 624,
+        "train_loss": 0.017602376830386013,
+        "validation_flow_loss": 0.04067017864557916,
+        "validation_action_mse_normalized": 0.16141523915136952
+      },
+      {
+        "epoch": 5,
+        "global_step": 780,
+        "train_loss": 0.014421972716038125,
+        "validation_flow_loss": 0.043685833403739015,
+        "validation_action_mse_normalized": 0.1540259250287209
+      },
+      {
+        "epoch": 6,
+        "global_step": 936,
+        "train_loss": 0.012431435464109238,
+        "validation_flow_loss": 0.046517970590204544,
+        "validation_action_mse_normalized": 0.14435530629320223
+      },
+      {
+        "epoch": 7,
+        "global_step": 1092,
+        "train_loss": 0.012158959924888153,
+        "validation_flow_loss": 0.059527189953139964,
+        "validation_action_mse_normalized": 0.1379412275907855
+      },
+      {
+        "epoch": 8,
+        "global_step": 1248,
+        "train_loss": 0.011873363036638461,
+        "validation_flow_loss": 0.05267873301036077,
+        "validation_action_mse_normalized": 0.1449582231703403
+      }
+    ]
+  },
+  "evaluation": {
+    "protocol": {
+      "tasks": 10,
+      "episodes_per_task": 40,
+      "episodes_per_checkpoint": 400,
+      "seed": 7,
+      "replan_steps": 5,
+      "save_video": false,
+      "renderer": "NVIDIA RTX PRO 6000 Blackwell Server Edition/PCIe/SSE2"
+    },
+    "task_names": {
+      "0": "pick up the alphabet soup and place it in the basket",
+      "1": "pick up the cream cheese and place it in the basket",
+      "2": "pick up the salad dressing and place it in the basket",
+      "3": "pick up the bbq sauce and place it in the basket",
+      "4": "pick up the ketchup and place it in the basket",
+      "5": "pick up the tomato sauce and place it in the basket",
+      "6": "pick up the butter and place it in the basket",
+      "7": "pick up the milk and place it in the basket",
+      "8": "pick up the chocolate pudding and place it in the basket",
+      "9": "pick up the orange juice and place it in the basket"
+    },
+    "best_checkpoint": {
+      "epoch": 6,
+      "successes": 180,
+      "episodes": 400,
+      "success_rate": 0.45
+    },
+    "results_by_epoch": [
+      {
+        "epoch": 1,
+        "successes": 2,
+        "episodes": 400,
+        "success_rate": 0.005,
+        "per_task_successes": [0, 0, 0, 1, 0, 0, 0, 0, 1, 0]
+      },
+      {
+        "epoch": 2,
+        "successes": 0,
+        "episodes": 400,
+        "success_rate": 0.0,
+        "per_task_successes": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      },
+      {
+        "epoch": 3,
+        "successes": 19,
+        "episodes": 400,
+        "success_rate": 0.0475,
+        "per_task_successes": [0, 2, 13, 1, 0, 0, 0, 0, 0, 3]
+      },
+      {
+        "epoch": 4,
+        "successes": 12,
+        "episodes": 400,
+        "success_rate": 0.03,
+        "per_task_successes": [0, 1, 6, 0, 2, 0, 1, 1, 1, 0]
+      },
+      {
+        "epoch": 5,
+        "successes": 75,
+        "episodes": 400,
+        "success_rate": 0.1875,
+        "per_task_successes": [1, 5, 0, 1, 1, 0, 17, 23, 13, 14]
+      },
+      {
+        "epoch": 6,
+        "successes": 180,
+        "episodes": 400,
+        "success_rate": 0.45,
+        "per_task_successes": [7, 3, 17, 26, 28, 13, 22, 22, 14, 28]
+      },
+      {
+        "epoch": 7,
+        "successes": 109,
+        "episodes": 400,
+        "success_rate": 0.2725,
+        "per_task_successes": [7, 17, 19, 3, 6, 0, 8, 5, 14, 30]
+      },
+      {
+        "epoch": 8,
+        "successes": 120,
+        "episodes": 400,
+        "success_rate": 0.3,
+        "per_task_successes": [15, 10, 27, 6, 1, 2, 17, 23, 3, 16]
+      }
+    ]
+  },
+  "slurm": {
+    "training_job_id": 235126,
+    "evaluation_job_id": 235127
+  }
+}
