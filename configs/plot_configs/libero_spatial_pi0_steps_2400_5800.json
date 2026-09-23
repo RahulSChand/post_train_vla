@@ -1,0 +1,35 @@
+{
+  "title": "LIBERO-Spatial: π₀ vs. π₀.₅ Success Rate by Training Step",
+  "subtitle": "π₀ initial run plus resume checkpoints through step 5,800 · solid = π₀.₅ · dashed = π₀ · stars mark each model's highest SR",
+  "output": "../../final_results/pi0_vs_pi05_libero_spatial_steps_2400_5800.png",
+  "x_axis": "step",
+  "x_label": "Training step",
+  "x_tick_step": 500,
+  "color_by": "model",
+  "mark_best_points": true,
+  "colors": {
+    "pi0": "#2563EB",
+    "pi05": "#F97316"
+  },
+  "inputs": [
+    {
+      "path": "../../final_results/json/pi0_2_epochs.json",
+      "model": "pi0",
+      "trajectory": 0,
+      "x_path": "step"
+    },
+    {
+      "path": "../../final_results/json/pi0_libero_spatial_steps_2400_5800_40_rollouts_complete_summary.json",
+      "model": "pi0",
+      "trajectory": 0,
+      "x_path": "step"
+    },
+    {
+      "path": "../../final_results/json/pi05_2_epochs.json",
+      "model": "pi05",
+      "trajectory": 0,
+      "x_path": "checkpoint"
+    }
+  ],
+  "footnote": "400 evaluation episodes per checkpoint · whole-dataset training"
+}

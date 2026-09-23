@@ -1,0 +1,3006 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-21T04:19:58.920624+00:00",
+  "source_repo": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints",
+  "source_directory": "evaluations/libero_spatial_all_tasks_40_rollouts_steps_2400_7600",
+  "suite": "libero_spatial",
+  "episodes_per_task": 40,
+  "tasks_per_checkpoint": 10,
+  "rollouts_per_checkpoint": 400,
+  "completed_checkpoint_count": 18,
+  "completed_steps": [
+    2400,
+    2600,
+    2800,
+    3000,
+    3200,
+    3400,
+    3600,
+    3800,
+    4000,
+    4200,
+    4400,
+    4600,
+    4800,
+    5000,
+    5200,
+    5400,
+    5600,
+    5800
+  ],
+  "total_episodes": 7200,
+  "total_successes": 6604,
+  "overall_success_rate": 0.9172222222222223,
+  "best_checkpoint": {
+    "step": 5400,
+    "successes": 380,
+    "episodes": 400,
+    "success_rate": 0.95
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "step": 5400,
+      "successes": 380,
+      "episodes": 400,
+      "success_rate": 0.95
+    },
+    {
+      "rank": 2,
+      "step": 4200,
+      "successes": 379,
+      "episodes": 400,
+      "success_rate": 0.9475
+    },
+    {
+      "rank": 3,
+      "step": 5200,
+      "successes": 378,
+      "episodes": 400,
+      "success_rate": 0.945
+    },
+    {
+      "rank": 4,
+      "step": 5000,
+      "successes": 377,
+      "episodes": 400,
+      "success_rate": 0.9425
+    },
+    {
+      "rank": 5,
+      "step": 3200,
+      "successes": 376,
+      "episodes": 400,
+      "success_rate": 0.94
+    },
+    {
+      "rank": 6,
+      "step": 4800,
+      "successes": 376,
+      "episodes": 400,
+      "success_rate": 0.94
+    },
+    {
+      "rank": 7,
+      "step": 5600,
+      "successes": 376,
+      "episodes": 400,
+      "success_rate": 0.94
+    },
+    {
+      "rank": 8,
+      "step": 3800,
+      "successes": 373,
+      "episodes": 400,
+      "success_rate": 0.9325
+    },
+    {
+      "rank": 9,
+      "step": 4000,
+      "successes": 373,
+      "episodes": 400,
+      "success_rate": 0.9325
+    },
+    {
+      "rank": 10,
+      "step": 5800,
+      "successes": 372,
+      "episodes": 400,
+      "success_rate": 0.93
+    },
+    {
+      "rank": 11,
+      "step": 3000,
+      "successes": 370,
+      "episodes": 400,
+      "success_rate": 0.925
+    },
+    {
+      "rank": 12,
+      "step": 3400,
+      "successes": 369,
+      "episodes": 400,
+      "success_rate": 0.9225
+    },
+    {
+      "rank": 13,
+      "step": 4400,
+      "successes": 369,
+      "episodes": 400,
+      "success_rate": 0.9225
+    },
+    {
+      "rank": 14,
+      "step": 3600,
+      "successes": 366,
+      "episodes": 400,
+      "success_rate": 0.915
+    },
+    {
+      "rank": 15,
+      "step": 4600,
+      "successes": 366,
+      "episodes": 400,
+      "success_rate": 0.915
+    },
+    {
+      "rank": 16,
+      "step": 2800,
+      "successes": 344,
+      "episodes": 400,
+      "success_rate": 0.86
+    },
+    {
+      "rank": 17,
+      "step": 2400,
+      "successes": 340,
+      "episodes": 400,
+      "success_rate": 0.85
+    },
+    {
+      "rank": 18,
+      "step": 2600,
+      "successes": 320,
+      "episodes": 400,
+      "success_rate": 0.8
+    }
+  ],
+  "per_task_across_checkpoints": {
+    "0": {
+      "task": "pick up the black bowl between the plate and the ramekin and place it on the plate",
+      "episodes": 720,
+      "successes": 678,
+      "success_rate": 0.9416666666666667,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 31,
+          "success_rate": 0.775
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        }
+      ]
+    },
+    "1": {
+      "task": "pick up the black bowl next to the ramekin and place it on the plate",
+      "episodes": 720,
+      "successes": 682,
+      "success_rate": 0.9472222222222222,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 30,
+          "success_rate": 0.75
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        }
+      ]
+    },
+    "2": {
+      "task": "pick up the black bowl from table center and place it on the plate",
+      "episodes": 720,
+      "successes": 708,
+      "success_rate": 0.9833333333333333,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        }
+      ]
+    },
+    "3": {
+      "task": "pick up the black bowl on the cookie box and place it on the plate",
+      "episodes": 720,
+      "successes": 697,
+      "success_rate": 0.9680555555555556,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        }
+      ]
+    },
+    "4": {
+      "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate",
+      "episodes": 720,
+      "successes": 569,
+      "success_rate": 0.7902777777777777,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 30,
+          "success_rate": 0.75
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 28,
+          "success_rate": 0.7
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 30,
+          "success_rate": 0.75
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 29,
+          "success_rate": 0.725
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 31,
+          "success_rate": 0.775
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 24,
+          "success_rate": 0.6
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 27,
+          "success_rate": 0.675
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        }
+      ]
+    },
+    "5": {
+      "task": "pick up the black bowl on the ramekin and place it on the plate",
+      "episodes": 720,
+      "successes": 643,
+      "success_rate": 0.8930555555555556,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 25,
+          "success_rate": 0.625
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 29,
+          "success_rate": 0.725
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 30,
+          "success_rate": 0.75
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        }
+      ]
+    },
+    "6": {
+      "task": "pick up the black bowl next to the cookie box and place it on the plate",
+      "episodes": 720,
+      "successes": 697,
+      "success_rate": 0.9680555555555556,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        }
+      ]
+    },
+    "7": {
+      "task": "pick up the black bowl on the stove and place it on the plate",
+      "episodes": 720,
+      "successes": 633,
+      "success_rate": 0.8791666666666667,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 19,
+          "success_rate": 0.475
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        }
+      ]
+    },
+    "8": {
+      "task": "pick up the black bowl next to the plate and place it on the plate",
+      "episodes": 720,
+      "successes": 641,
+      "success_rate": 0.8902777777777777,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 32,
+          "success_rate": 0.8
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 29,
+          "success_rate": 0.725
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        }
+      ]
+    },
+    "9": {
+      "task": "pick up the black bowl on the wooden cabinet and place it on the plate",
+      "episodes": 720,
+      "successes": 656,
+      "success_rate": 0.9111111111111111,
+      "by_checkpoint": [
+        {
+          "step": 2400,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 2600,
+          "episodes": 40,
+          "successes": 31,
+          "success_rate": 0.775
+        },
+        {
+          "step": 2800,
+          "episodes": 40,
+          "successes": 33,
+          "success_rate": 0.825
+        },
+        {
+          "step": 3000,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3200,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 3400,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 3600,
+          "episodes": 40,
+          "successes": 36,
+          "success_rate": 0.9
+        },
+        {
+          "step": 3800,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 4000,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 4200,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 4400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 4600,
+          "episodes": 40,
+          "successes": 35,
+          "success_rate": 0.875
+        },
+        {
+          "step": 4800,
+          "episodes": 40,
+          "successes": 34,
+          "success_rate": 0.85
+        },
+        {
+          "step": 5000,
+          "episodes": 40,
+          "successes": 39,
+          "success_rate": 0.975
+        },
+        {
+          "step": 5200,
+          "episodes": 40,
+          "successes": 37,
+          "success_rate": 0.925
+        },
+        {
+          "step": 5400,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        },
+        {
+          "step": 5600,
+          "episodes": 40,
+          "successes": 40,
+          "success_rate": 1.0
+        },
+        {
+          "step": 5800,
+          "episodes": 40,
+          "successes": 38,
+          "success_rate": 0.95
+        }
+      ]
+    }
+  },
+  "checkpoints": {
+    "2400": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_002400",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.775,
+          "successes": 31,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.75,
+          "successes": 30,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.625,
+          "successes": 25,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/2400",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "2400",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 2400,
+      "success_rate": 0.85,
+      "successes": 340,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "2600": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_002600",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.75,
+          "successes": 30,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.7,
+          "successes": 28,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.725,
+          "successes": 29,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.475,
+          "successes": 19,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.775,
+          "successes": 31,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/2600",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "2600",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 2600,
+      "success_rate": 0.8,
+      "successes": 320,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "2800": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_002800",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.75,
+          "successes": 30,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.75,
+          "successes": 30,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.725,
+          "successes": 29,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/2800",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "2800",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 2800,
+      "success_rate": 0.86,
+      "successes": 344,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "3000": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_003000",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.725,
+          "successes": 29,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/3000",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "3000",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 3000,
+      "success_rate": 0.925,
+      "successes": 370,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "3200": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_003200",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/3200",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "3200",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 3200,
+      "success_rate": 0.94,
+      "successes": 376,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "3400": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_003400",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.775,
+          "successes": 31,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/3400",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "3400",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 3400,
+      "success_rate": 0.9225,
+      "successes": 369,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "3600": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_003600",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.6,
+          "successes": 24,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/3600",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "3600",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 3600,
+      "success_rate": 0.915,
+      "successes": 366,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "3800": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_003800",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/3800",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "3800",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 3800,
+      "success_rate": 0.9325,
+      "successes": 373,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "4000": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_004000",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/4000",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "4000",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 4000,
+      "success_rate": 0.9325,
+      "successes": 373,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "4200": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_004200",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/4200",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "4200",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 4200,
+      "success_rate": 0.9475,
+      "successes": 379,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "4400": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_004400",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/4400",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "4400",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 4400,
+      "success_rate": 0.9225,
+      "successes": 369,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "4600": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_004600",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.675,
+          "successes": 27,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/4600",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "4600",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 4600,
+      "success_rate": 0.915,
+      "successes": 366,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "4800": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_004800",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/4800",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "4800",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 4800,
+      "success_rate": 0.94,
+      "successes": 376,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "5000": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_005000",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/5000",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "5000",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 5000,
+      "success_rate": 0.9425,
+      "successes": 377,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "5200": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_005200",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/5200",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "5200",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 5200,
+      "success_rate": 0.945,
+      "successes": 378,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "5400": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_005400",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.875,
+          "successes": 35,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/5400",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "5400",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 5400,
+      "success_rate": 0.95,
+      "successes": 380,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "5600": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu0/eval/step_005600",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.8,
+          "successes": 32,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu0/5600",
+        "device": "cuda",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "5600",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 5600,
+      "success_rate": 0.94,
+      "successes": 376,
+      "suite": "libero_spatial",
+      "workers": 8
+    },
+    "5800": {
+      "config": {
+        "episode_offset": 0,
+        "episodes_per_task": 40,
+        "output_dir": "/workspace/artifacts/pi0-libero-resume-gpu1/eval/step_005800",
+        "render_resolution": 256,
+        "replan_steps": 5,
+        "resize_size": 224,
+        "save_video": false,
+        "seed": 7,
+        "suite": "libero_spatial",
+        "task_ids": null,
+        "wait_steps": 10
+      },
+      "episodes": 400,
+      "per_task": {
+        "0": {
+          "episodes": 40,
+          "success_rate": 0.9,
+          "successes": 36,
+          "task": "pick up the black bowl between the plate and the ramekin and place it on the plate"
+        },
+        "1": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl next to the ramekin and place it on the plate"
+        },
+        "2": {
+          "episodes": 40,
+          "success_rate": 1.0,
+          "successes": 40,
+          "task": "pick up the black bowl from table center and place it on the plate"
+        },
+        "3": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the cookie box and place it on the plate"
+        },
+        "4": {
+          "episodes": 40,
+          "success_rate": 0.85,
+          "successes": 34,
+          "task": "pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate"
+        },
+        "5": {
+          "episodes": 40,
+          "success_rate": 0.925,
+          "successes": 37,
+          "task": "pick up the black bowl on the ramekin and place it on the plate"
+        },
+        "6": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl next to the cookie box and place it on the plate"
+        },
+        "7": {
+          "episodes": 40,
+          "success_rate": 0.975,
+          "successes": 39,
+          "task": "pick up the black bowl on the stove and place it on the plate"
+        },
+        "8": {
+          "episodes": 40,
+          "success_rate": 0.825,
+          "successes": 33,
+          "task": "pick up the black bowl next to the plate and place it on the plate"
+        },
+        "9": {
+          "episodes": 40,
+          "success_rate": 0.95,
+          "successes": 38,
+          "task": "pick up the black bowl on the wooden cabinet and place it on the plate"
+        }
+      },
+      "policy_metadata": {
+        "backend": "pytorch-standalone",
+        "checkpoint": "/workspace/artifacts/pi0-libero-resume-gpu1/5800",
+        "device": "cuda:1",
+        "model": "pi0"
+      },
+      "source": {
+        "checkpoint": "5800",
+        "repo_id": "Chand0320/pi0-libero-resume-2206-plus5epochs-checkpoints"
+      },
+      "step": 5800,
+      "success_rate": 0.93,
+      "successes": 372,
+      "suite": "libero_spatial",
+      "workers": 8
+    }
+  }
+}
