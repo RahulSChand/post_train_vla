@@ -42,26 +42,35 @@ class FiniteModernDataset(Dataset):
 
 
 def modern(args):
-    version = 'gr00t_n1d' + args.version[-1]
-    module = importlib.import_module(f'gr00t.model.{version}.{version}')
-    proc_module = importlib.import_module(f'gr00t.model.{version}.processing_{version}')
-    model_class = getattr(module, 'Gr00tN1d' + args.version[-1])
-    processor_class = getattr(proc_module, 'Gr00tN1d' + args.version[-1] + 'Processor')
-    from gr00t.configs.data.embodiment_configs import MODALITY_CONFIGS
-    from gr00t.data.embodiment_tags import EmbodimentTag
+    from gr00t.configs.base_config import Config
+    from gr00t.configs.data.libero_spatial import libero_spatial_config
     from gr00t.data.dataset.lerobot_episode_loader import LeRobotEpisodeLoader
+    from gr00t.data.types import EmbodimentTag
+    from gr00t.experiment.launch_finetune import select_model_config
+    from gr00t.model import MODEL_REGISTRY
+
     tag = EmbodimentTag.LIBERO_PANDA
-    modalities = MODALITY_CONFIGS[tag.value]
-    model, loading = model_class.from_pretrained(
-        args.checkpoint, tune_llm=True, tune_visual=True, tune_projector=True,
-        tune_diffusion_model=True, tune_vlln=True, backbone_trainable_params_fp32=True,
-        load_bf16=args.version == 'n1d6', use_flash_attention=args.version == 'n1d6', output_loading_info=True)
-    for key in ('missing_keys', 'unexpected_keys', 'mismatched_keys', 'error_msgs'):
-        if loading.get(key):
-            raise RuntimeError(f'Checkpoint mismatch: {key}: {loading[key]}')
-    processor = processor_class.from_pretrained(
-        args.checkpoint, modality_configs={tag.value: modalities}, use_relative_action=False,
-        max_action_horizon=model.config.action_horizon, state_dropout_prob=0.2)
+    versions = {'n1d5': '1.5', 'n1d6': '1.6', 'n1d7': '1.7'}
+    config = Config()
+    config.model = select_model_config(args.checkpoint, versions[args.version])
+    for name in ('tune_llm', 'tune_visual', 'tune_projector', 'tune_diffusion_model'):
+        setattr(config.model, name, True)
+    # N1.5 does not implement state dropout. Preserve the established N1.6/N1.7
+    # finite-training recipe, which uses 0.2.
+    config.model.state_dropout_prob = 0.0 if args.version == 'n1d5' else 0.2
+    config.training.start_from_checkpoint = args.checkpoint
+    config.training.transformers_trust_remote_code = True
+    artifact_dir = args.output / 'experiment_cfg'
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    pipeline = MODEL_REGISTRY[type(config.model)](config, artifact_dir)
+    model = pipeline._create_model()
+    if model.config.model_type == 'Gr00tN1d7':
+        model.config.backbone_config = model.backbone.model.config.to_dict()
+    config.model.action_horizon = model.config.action_horizon
+    modalities = libero_spatial_config(model.config.action_horizon)
+    config.data.modality_configs = {tag.value: modalities}
+    processor = pipeline._create_processor()
+    config.save(artifact_dir / 'config.yaml')
     loader = LeRobotEpisodeLoader(args.dataset, modalities)
     processor.set_statistics({tag.value: loader.get_dataset_statistics()}, override=True)
     processor.train()
@@ -141,10 +150,11 @@ def save_epoch(args, model, processor, dataset, epoch, step):
     if processor is not None: processor.save_pretrained(cp)
     if (args.output/'experiment_cfg').exists():
         shutil.copytree(args.output/'experiment_cfg',cp/'experiment_cfg')
-        write_json(cp/'experiment_cfg/transforms_typed.json',[
-            {'class':type(t).__module__+'.'+type(t).__name__,
-             'kwargs':t.model_dump(mode='json',exclude={'vlm_processor','eagle_processor'})}
-            for t in dataset.transforms.transforms])
+        if hasattr(dataset, 'transforms'):
+            write_json(cp/'experiment_cfg/transforms_typed.json',[
+                {'class':type(t).__module__+'.'+type(t).__name__,
+                 'kwargs':t.model_dump(mode='json',exclude={'vlm_processor','eagle_processor'})}
+                for t in dataset.transforms.transforms])
     shutil.copytree(args.dataset/'meta',cp/'dataset_metadata')
     for name in ('trajectory_manifest.json','run_config.json','runtime.json','gradient_check.json','metrics.jsonl'):
         shutil.copy2(args.output/name,cp/name)
@@ -178,13 +188,14 @@ def main():
         raise FileExistsError(f'Use a fresh output directory: {args.output}')
     args.output.mkdir(parents=True, exist_ok=True)
     manifest = json.loads((args.dataset / 'trajectory_manifest.json').read_text())
-    if manifest['suite'] != 'libero_spatial' or manifest['trajectory_count'] < 1:
-        raise ValueError('Expected a nonempty LIBERO Spatial trajectory manifest')
+    suites = {'libero_spatial', 'libero_goal', 'libero_object'}
+    if manifest['suite'] not in suites or manifest['trajectory_count'] < 1:
+        raise ValueError('Expected a nonempty LIBERO Spatial, Goal, or Object trajectory manifest')
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.backends.cuda.matmul.allow_tf32 = True
-    model, dataset, collator, processor = (legacy if args.version in ('n1', 'n1d5') else modern)(args)
+    model, dataset, collator, processor = (legacy if args.version == 'n1' else modern)(args)
     assert len(dataset) == manifest['total_frames'], (len(dataset), manifest['total_frames'])
     # Explicitly include the entire VLM and all state/action projections and DiT parameters.
     model.requires_grad_(True)
@@ -193,7 +204,7 @@ def main():
                         for key, sub in [('vlm', model.backbone), ('action_head', model.action_head)]}
     assert all(parameter_counts.values()) and all(p.requires_grad for p in model.parameters())
     write_json(args.output / 'run_config.json', dict(version=args.version, checkpoint=args.checkpoint,
-               suite='libero_spatial', trajectories=manifest['trajectory_count'], max_epochs=args.epochs, batch_size=args.batch_size,
+               suite=manifest['suite'], trajectories=manifest['trajectory_count'], max_epochs=args.epochs, batch_size=args.batch_size,
                accumulation=args.accumulation, learning_rate=args.learning_rate, trainable_parameters=parameter_counts,
                seed=args.seed, tune_llm=True, tune_visual=True, tune_projector=True, tune_diffusion_model=True,
                epoch_definition='Every selected frame once, shuffled without replacement; pad chunks within episodes'))
