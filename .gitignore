@@ -8,3 +8,5 @@ assets/
 artifacts/
 /data/
 /final_results/
+/experiments/groot_spatial50_20260918/
+/monitor_upload_*.sh

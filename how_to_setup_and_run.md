@@ -353,8 +353,6 @@ Full local logs and the runner that seeds both fresh servers with 7 are retained
 
 For full VLM and action-head fine-tuning with local checkpoints at every epoch,
 see [GR00T training and checkpoint publication](docs/groot_training.md).
-The completed Spatial-50 campaign is archived under
-[`experiments/groot_spatial50_20260918`](experiments/groot_spatial50_20260918).
 
 Use `scripts/evaluate_saved_groot.py` for saved GR00T checkpoints and `scripts/report_saved_groot.py` for
 validation, JSON/CSV exports, and plots. Run them with the model environment from `/root/minimal-groot`:
