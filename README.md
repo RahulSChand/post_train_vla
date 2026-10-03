@@ -239,7 +239,22 @@ Run one smoke episode in another terminal:
 Results are written to `outputs/smoke/episodes.jsonl` and `outputs/smoke/summary.json`. Pass `--save-video` to the
 script to record a rollout. Remove `--task-id 0` and increase `--episodes-per-task` for complete evaluation.
 
-### Current method: EGL and preprocessing only when replanning
+### MAIN EVAL FAST TECHNIQUE
+
+Run LIBERO evals using **EGL GPU rendering, 20 parallel rollout workers, and batched CUDA
+policy inference**. Set `MUJOCO_GL=egl` and `PYOPENGL_PLATFORM=egl`; use evaluator `--workers 20`
+and policy server `--device cuda --max-batch-size 20 --batch-wait-ms 10`. Verify that the OpenGL
+renderer reports NVIDIA hardware. Disable videos when benchmarking speed.
+
+The October 3 pi0-base benchmark measured 20 full-length Spatial task-0 rollouts:
+94.0s with OSMesa and 59.3s with EGL at 20 workers (1.58x throughput).
+With EGL, the one-worker / batch-size-one defaults took 395.7s; parallel rollouts and batching
+improved throughput 6.67x over that configuration.
+See [the measurements and reproduction command](docs/eval_performance_20261003.md).
+`scripts/benchmark_libero.py` runs both configurations with fresh seeded CUDA policy servers,
+records the actual OpenGL renderer and separates rendering, environment-step and policy-request timings.
+
+#### Current method: EGL and preprocessing only when replanning
 
 The command structure is unchanged. Checkpoint sweeps and training-time evaluation now default to EGL;
 preprocessing runs only when requesting a new action chunk. Explicitly setting both rendering variables below
@@ -280,7 +295,7 @@ Without videos, policy observation preprocessing runs only when requesting a new
 simulation steps by default). Video recording still prepares every frame. Physics and camera observations
 continue to update on every simulation step; the action sequence and replanning interval are unchanged.
 
-### One checkpoint, 20 episodes, Spatial task 0
+#### One checkpoint, 20 episodes, Spatial task 0
 
 Start the server in one terminal (stop any other server on port 8001 first):
 
@@ -290,7 +305,7 @@ cd /home/ubuntu/post_train_vla
   --checkpoint /home/ubuntu/checkpoints/pi05_libero_spatial_bs40_2epochs/1750 \
   --tokenizer assets/paligemma_tokenizer.model --model pi05 \
   --device cuda --host 127.0.0.1 --port 8001 \
-  --max-batch-size 32 --batch-wait-ms 10
+  --max-batch-size 20 --batch-wait-ms 10
 ```
 
 Then run the current method in another terminal. Choose an unused `--output-dir` on each rerun:
