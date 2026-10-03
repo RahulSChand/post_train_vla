@@ -169,6 +169,7 @@ def main():
     parser.add_argument('--batch-size', type=int, default=8)
     parser.add_argument('--accumulation', type=int, default=6)
     parser.add_argument('--learning-rate', type=float, default=1e-5)
+    parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--smoke', action='store_true', help='One real optimizer update, no saved weights.')
     args = parser.parse_args()
     if args.epochs < 1 or args.batch_size < 1 or args.accumulation < 1:
@@ -179,9 +180,9 @@ def main():
     manifest = json.loads((args.dataset / 'trajectory_manifest.json').read_text())
     if manifest['suite'] != 'libero_spatial' or manifest['trajectory_count'] < 1:
         raise ValueError('Expected a nonempty LIBERO Spatial trajectory manifest')
-    random.seed(42)
-    np.random.seed(42)
-    torch.manual_seed(42)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     torch.backends.cuda.matmul.allow_tf32 = True
     model, dataset, collator, processor = (legacy if args.version in ('n1', 'n1d5') else modern)(args)
     assert len(dataset) == manifest['total_frames'], (len(dataset), manifest['total_frames'])
@@ -194,7 +195,7 @@ def main():
     write_json(args.output / 'run_config.json', dict(version=args.version, checkpoint=args.checkpoint,
                suite='libero_spatial', trajectories=manifest['trajectory_count'], max_epochs=args.epochs, batch_size=args.batch_size,
                accumulation=args.accumulation, learning_rate=args.learning_rate, trainable_parameters=parameter_counts,
-               seed=42, tune_llm=True, tune_visual=True, tune_projector=True, tune_diffusion_model=True,
+               seed=args.seed, tune_llm=True, tune_visual=True, tune_projector=True, tune_diffusion_model=True,
                epoch_definition='Every selected frame once, shuffled without replacement; pad chunks within episodes'))
     import gr00t
     runtime = Path(gr00t.__file__).resolve().parent.parent
@@ -203,7 +204,7 @@ def main():
                torch=torch.__version__, python=os.sys.version))
     shutil.copy2(args.dataset / 'trajectory_manifest.json', args.output)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, collate_fn=collator,
-                        num_workers=0, drop_last=False, generator=torch.Generator().manual_seed(42))
+                        num_workers=0, drop_last=False, generator=torch.Generator().manual_seed(args.seed))
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=1e-5)
     updates_per_epoch = math.ceil(len(loader) / args.accumulation)
     total_updates = updates_per_epoch * args.epochs
