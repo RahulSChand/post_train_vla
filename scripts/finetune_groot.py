@@ -148,25 +148,14 @@ def save_epoch(args, model, processor, dataset, epoch, step):
     model.save_pretrained(cp,state_dict={k:v.detach().cpu().to(torch.bfloat16) if v.is_floating_point()
                                        else v.detach().cpu() for k,v in model.state_dict().items()})
     if processor is not None: processor.save_pretrained(cp)
-    if (args.output/'experiment_cfg').exists():
-        shutil.copytree(args.output/'experiment_cfg',cp/'experiment_cfg')
-        if hasattr(dataset, 'transforms'):
-            write_json(cp/'experiment_cfg/transforms_typed.json',[
-                {'class':type(t).__module__+'.'+type(t).__name__,
-                 'kwargs':t.model_dump(mode='json',exclude={'vlm_processor','eagle_processor'})}
-                for t in dataset.transforms.transforms])
-    shutil.copytree(args.dataset/'meta',cp/'dataset_metadata')
-    for name in ('trajectory_manifest.json','run_config.json','runtime.json','gradient_check.json','metrics.jsonl'):
-        shutil.copy2(args.output/name,cp/name)
     write_json(cp/'epoch.json',dict(epoch=epoch,optimizer_step=step,epoch_cap=args.epochs,version=args.version))
-    # Save exact source used for loading, training, normalization, and evaluation.
-    runtime=Path(json.loads((args.output/'runtime.json').read_text())['root'])
-    shutil.copytree(runtime/'gr00t',cp/'runtime/gr00t',ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
-    for name in ('LICENSE','NOTICE','ATTRIBUTIONS.md'):
-        if (runtime/name).is_file(): shutil.copy2(runtime/name,cp/name)
-    code=cp/'campaign_code'; code.mkdir()
-    shutil.copy2(Path(__file__), code / Path(__file__).name)
-    shutil.copytree(Path(__file__).resolve().parents[1]/'src/post_train_vla',code/'post_train_vla',ignore=shutil.ignore_patterns('__pycache__'))
+    checkpoint_files = sorted(str(path.relative_to(cp)) for path in cp.rglob('*') if path.is_file())
+    write_json(cp/'checkpoint_manifest.json', {
+        'format': 'groot-inference-checkpoint-v1',
+        'files': checkpoint_files,
+        'optimizer_saved': False,
+        'scheduler_saved': False,
+    })
 
 
 def main():

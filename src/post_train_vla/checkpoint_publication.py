@@ -1,7 +1,7 @@
 """Publish immutable epoch artifacts and verify their remote content identities."""
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import time
 
@@ -15,6 +15,38 @@ def digest(path):
         return hasher.hexdigest()
 
 
+def publication_files(folder):
+    """Return only files explicitly emitted by the inference-checkpoint saver."""
+    folder = Path(folder)
+    manifest_path = folder / 'checkpoint_manifest.json'
+    if not manifest_path.is_file():
+        raise ValueError(f"Missing checkpoint manifest: {manifest_path}")
+    manifest = json.loads(manifest_path.read_text())
+    if manifest.get('format') != 'groot-inference-checkpoint-v1':
+        raise ValueError(f"Unsupported checkpoint manifest format: {manifest.get('format')!r}")
+    names = manifest.get('files')
+    if not isinstance(names, list) or not names:
+        raise ValueError("Checkpoint manifest must contain a nonempty files list")
+    if len(names) != len(set(names)):
+        raise ValueError("Checkpoint manifest contains duplicate paths")
+    files = []
+    for name in names:
+        if not isinstance(name, str):
+            raise ValueError(f"Unsafe checkpoint path: {name!r}")
+        relative = PurePosixPath(name)
+        if relative.is_absolute() or '..' in relative.parts:
+            raise ValueError(f"Unsafe checkpoint path: {name!r}")
+        path = folder.joinpath(*relative.parts)
+        if not path.is_file():
+            raise ValueError(f"Manifest file is missing: {name}")
+        files.append(path)
+    if not any(path.name == 'config.json' for path in files):
+        raise ValueError("Checkpoint manifest is missing config.json")
+    if not any(path.suffix == '.safetensors' for path in files):
+        raise ValueError("Checkpoint manifest contains no safetensors weights")
+    return sorted(files + [manifest_path])
+
+
 def publish(folder, *, repo, prefix):
     from huggingface_hub import HfApi, get_hf_file_metadata, hf_hub_url
     if not repo or not prefix or prefix.startswith("/") or ".." in prefix.split("/"):
@@ -25,15 +57,15 @@ def publish(folder, *, repo, prefix):
     folder = Path(folder)
     if not folder.is_dir():
         raise ValueError(f"Checkpoint directory does not exist: {folder}")
-    files = sorted(p for p in folder.rglob('*') if p.is_file() and '.cache' not in p.parts
-                   and p.name != 'publication.json')
-    checks = {str(p.relative_to(folder)): digest(p) for p in files if p.name != 'artifact_checksums.json'}
+    files = publication_files(folder)
+    checks = {str(p.relative_to(folder)): digest(p) for p in files}
     (folder / 'artifact_checksums.json').write_text(json.dumps(checks, indent=2)+'\n')
-    files = sorted(set(files + [folder / 'artifact_checksums.json']))
+    files = sorted(files + [folder / 'artifact_checksums.json'])
+    relative_files = [str(path.relative_to(folder)) for path in files]
     for attempt in range(5):
         try:
-            subprocess.run(['hf', 'upload', repo, str(folder), prefix, '--exclude', '.cache/**',
-                            '--exclude', 'publication.json', '--commit-message', f'Save {prefix}'], check=True)
+            subprocess.run(['hf', 'upload', repo, str(folder), prefix, '--include', *relative_files,
+                            '--commit-message', f'Save {prefix}'], check=True)
             api = HfApi()
             revision = api.model_info(repo).sha
             for start in range(0, len(files), 50):
