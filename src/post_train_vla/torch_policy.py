@@ -96,6 +96,11 @@ class TorchPolicy:
     @torch.no_grad()
     def infer(self, raw_observation: dict, *, noise: np.ndarray | None = None) -> dict:
         observation, original_state = self.transforms.encode(raw_observation, self.device)
+        if noise is None and raw_observation.get("policy_noise_seed") is not None:
+            generator = np.random.default_rng(int(raw_observation["policy_noise_seed"]))
+            noise = generator.standard_normal(
+                (self.config.action_horizon, self.config.action_dim), dtype=np.float32
+            )
         noise_tensor = None if noise is None else torch.from_numpy(noise).float().unsqueeze(0).to(self.device)
         started = time.monotonic()
         actions = self.model.sample_actions(observation, noise=noise_tensor)
