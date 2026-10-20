@@ -27,6 +27,7 @@ model = [
     "transformers==4.53.2; python_version >= '3.9'",
 ]
 train = [
+    "bitsandbytes>=0.45",
     "lerobot",
     "pyarrow",
     "PyYAML>=6.0",

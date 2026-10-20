@@ -19,7 +19,7 @@ from types import SimpleNamespace
 import numpy as np
 import safetensors.torch
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, WeightedRandomSampler
 
 from post_train_vla.models import Pi0, Pi0Config
 from post_train_vla.torch_policy import find_norm_stats
@@ -33,7 +33,14 @@ class LeRobotLiberoDataset(Dataset):
     def __init__(self, repo_id: str, action_horizon: int) -> None:
         local_root = pathlib.Path(repo_id).expanduser()
         if local_root.is_dir():
-            self.dataset = _LocalLeRobotDataset(local_root, action_horizon)
+            correction_files = sorted((local_root / "corrections").glob("*.npz"))
+            if not correction_files:
+                correction_files = sorted(local_root.glob("*.npz"))
+            self.dataset = (
+                _CorrectionNpzDataset(correction_files, action_horizon)
+                if correction_files
+                else _LocalLeRobotDataset(local_root, action_horizon)
+            )
             self.meta = self.dataset.meta
             return
         try:
@@ -90,8 +97,8 @@ class _LocalLeRobotDataset(Dataset):
         self._parquet = parquet
         self.root = root.resolve()
         info = json.loads((self.root / "meta" / "info.json").read_text())
-        if info.get("codebase_version") != "v2.1":
-            raise ValueError(f"Expected a LeRobot v2.1 dataset, got {info.get('codebase_version')!r}")
+        if info.get("codebase_version") not in {"v2.0", "v2.1"}:
+            raise ValueError(f"Expected a LeRobot v2.0/v2.1 dataset, got {info.get('codebase_version')!r}")
         features = info.get("features", {})
         required = {"image", "wrist_image", "state", "task_index"}
         missing = required.difference(features)
@@ -176,6 +183,111 @@ class _LocalLeRobotDataset(Dataset):
             "action": np.asarray(action_rows, dtype=np.float32),
             "task_index": task_index,
             "prompt": self.meta.tasks[task_index],
+        }
+
+
+def _quat_to_axis_angle(quat: np.ndarray) -> np.ndarray:
+    quat = np.asarray(quat, dtype=np.float64).copy()
+    quat[3] = np.clip(quat[3], -1.0, 1.0)
+    denominator = np.sqrt(max(0.0, 1.0 - quat[3] * quat[3]))
+    if denominator < 1e-8:
+        return np.zeros(3, dtype=np.float32)
+    return (quat[:3] * 2.0 * np.arccos(quat[3]) / denominator).astype(np.float32)
+
+
+class _CorrectionNpzDataset(Dataset):
+    """In-memory reader for successful correction episodes emitted by baseline_eval."""
+
+    def __init__(self, paths: list[pathlib.Path], action_horizon: int) -> None:
+        if not paths:
+            raise ValueError("No correction NPZ files were found")
+        self.action_horizon = action_horizon
+        self._episodes = []
+        prompts = []
+        for path in paths:
+            with np.load(path, allow_pickle=False) as source:
+                metadata = json.loads(str(source["metadata_json"]))
+                if not metadata.get("native_success", False):
+                    raise ValueError(f"Correction is not marked successful: {path}")
+                actions = np.asarray(source["expert_actions"], dtype=np.float32)
+                base = np.asarray(source["observation__agentview_image"], dtype=np.uint8)
+                wrist = np.asarray(source["observation__robot0_eye_in_hand_image"], dtype=np.uint8)
+                eef = np.asarray(source["observation__robot0_eef_pos"], dtype=np.float32)
+                quat = np.asarray(source["observation__robot0_eef_quat"], dtype=np.float32)
+                gripper = np.asarray(source["observation__robot0_gripper_qpos"], dtype=np.float32)
+            length = len(actions)
+            if not all(len(values) == length + 1 for values in (base, wrist, eef, quat, gripper)):
+                raise ValueError(f"Correction observations are not action-aligned: {path}")
+            state = np.concatenate(
+                (
+                    eef[:length],
+                    np.stack([_quat_to_axis_angle(value) for value in quat[:length]]),
+                    gripper[:length],
+                ),
+                axis=-1,
+            ).astype(np.float32)
+            prompt = str(
+                metadata.get("source_trace_metadata", {}).get("task_description")
+                or metadata.get("instruction")
+                or metadata.get("task")
+            ).strip().lower().removesuffix(".")
+            prompts.append(prompt)
+            self._episodes.append(
+                {
+                    "path": str(path),
+                    "actions": actions,
+                    # LIBERO observations are upside-down relative to the
+                    # policy's canonical image convention.
+                    "image": np.ascontiguousarray(base[:length, ::-1, ::-1]),
+                    "wrist_image": np.ascontiguousarray(wrist[:length, ::-1, ::-1]),
+                    "state": state,
+                    "prompt": prompt,
+                    "length": length,
+                }
+            )
+        unique_prompts = sorted(set(prompts))
+        self.meta = SimpleNamespace(
+            fps=20,
+            features={
+                "image": {},
+                "wrist_image": {},
+                "state": {},
+                "actions": {},
+                "task_index": {},
+            },
+            tasks={index: prompt for index, prompt in enumerate(unique_prompts)},
+        )
+        self._task_indices = {prompt: index for index, prompt in self.meta.tasks.items()}
+        self._starts = []
+        total = 0
+        for episode in self._episodes:
+            self._starts.append(total)
+            total += episode["length"]
+        self._length = total
+
+    def __len__(self) -> int:
+        return self._length
+
+    def __getitem__(self, index: int) -> dict:
+        if index < 0:
+            index += self._length
+        if index < 0 or index >= self._length:
+            raise IndexError(index)
+        episode_index = bisect.bisect_right(self._starts, index) - 1
+        episode = self._episodes[episode_index]
+        row = index - self._starts[episode_index]
+        action_rows = [
+            episode["actions"][min(row + offset, episode["length"] - 1)]
+            for offset in range(self.action_horizon)
+        ]
+        task_index = self._task_indices[episode["prompt"]]
+        return {
+            "image": episode["image"][row],
+            "wrist_image": episode["wrist_image"][row],
+            "state": episode["state"][row],
+            "action": np.asarray(action_rows, dtype=np.float32),
+            "task_index": task_index,
+            "prompt": episode["prompt"],
         }
 
 
@@ -407,6 +519,21 @@ def build_parser() -> argparse.ArgumentParser:
         default="physical-intelligence/libero",
         help="Hub repo ID or local LeRobot dataset directory",
     )
+    parser.add_argument(
+        "--replay-dataset-repo",
+        help="Optional Hub repo ID or local LeRobot dataset mixed with --dataset-repo",
+    )
+    parser.add_argument(
+        "--primary-dataset-fraction",
+        type=float,
+        default=0.5,
+        help="Sampling probability for --dataset-repo when replay data is configured",
+    )
+    parser.add_argument(
+        "--samples-per-epoch",
+        type=int,
+        help="Number of weighted samples per epoch (default: combined dataset length)",
+    )
     parser.add_argument("--output-dir", type=pathlib.Path, required=True)
     parser.add_argument(
         "--steps",
@@ -433,6 +560,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Accumulate this many microbatches before each optimizer step",
     )
     parser.add_argument("--learning-rate", type=float, default=5e-5)
+    parser.add_argument(
+        "--optimizer",
+        choices=("adamw", "paged_adamw_8bit"),
+        default="adamw",
+        help="Optimizer implementation; paged 8-bit state enables full tuning on smaller GPUs.",
+    )
     parser.add_argument(
         "--save-every",
         type=int,
@@ -528,6 +661,10 @@ def main() -> None:
     args = parse_args_with_config(build_parser())
     if args.steps < 1 or args.batch_size < 1 or args.gradient_accumulation_steps < 1:
         raise ValueError("--steps, --batch-size, and --gradient-accumulation-steps must be positive")
+    if not 0.0 < args.primary_dataset_fraction < 1.0:
+        raise ValueError("--primary-dataset-fraction must be strictly between zero and one")
+    if args.samples_per_epoch is not None and args.samples_per_epoch < 1:
+        raise ValueError("--samples-per-epoch must be positive")
     if args.lora and (args.lora_paligemma_rank < 1 or args.lora_action_expert_rank < 1):
         raise ValueError("LoRA ranks must be positive")
     if args.eval_every < 0 or args.eval_episodes < 1:
@@ -582,7 +719,16 @@ def main() -> None:
         print("gradient_checkpointing=enabled", flush=True)
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
-    optimizer = torch.optim.AdamW(parameters, lr=args.learning_rate)
+    if args.optimizer == "paged_adamw_8bit":
+        try:
+            import bitsandbytes as bnb
+        except ImportError as error:
+            raise RuntimeError(
+                "--optimizer paged_adamw_8bit requires the train extra with bitsandbytes"
+            ) from error
+        optimizer = bnb.optim.PagedAdamW8bit(parameters, lr=args.learning_rate)
+    else:
+        optimizer = torch.optim.AdamW(parameters, lr=args.learning_rate)
     if args.resume and not args.reset_optimizer:
         restore_optimizer(optimizer, checkpoint)
         print(f"resumed={checkpoint} initial_step={initial_step}", flush=True)
@@ -590,11 +736,39 @@ def main() -> None:
         print(f"warm_started={checkpoint} initial_step={initial_step} optimizer=fresh", flush=True)
     transforms = LiberoTransforms(config, find_norm_stats(checkpoint), args.tokenizer)
     extra_delta_actions = not config.pi05 if args.extra_delta_actions is None else args.extra_delta_actions
-    dataset = LeRobotLiberoDataset(args.dataset_repo, config.action_horizon)
+    primary_dataset = LeRobotLiberoDataset(args.dataset_repo, config.action_horizon)
+    sampler = None
+    if args.replay_dataset_repo:
+        replay_dataset = LeRobotLiberoDataset(args.replay_dataset_repo, config.action_horizon)
+        dataset = ConcatDataset((primary_dataset, replay_dataset))
+        primary_weight = args.primary_dataset_fraction / len(primary_dataset)
+        replay_weight = (1.0 - args.primary_dataset_fraction) / len(replay_dataset)
+        weights = torch.cat(
+            (
+                torch.full((len(primary_dataset),), primary_weight, dtype=torch.double),
+                torch.full((len(replay_dataset),), replay_weight, dtype=torch.double),
+            )
+        )
+        samples_per_epoch = args.samples_per_epoch or len(dataset)
+        sampler = WeightedRandomSampler(
+            weights,
+            num_samples=samples_per_epoch,
+            replacement=True,
+            generator=torch.Generator().manual_seed(args.seed),
+        )
+        print(
+            f"primary_frames={len(primary_dataset)} replay_frames={len(replay_dataset)} "
+            f"primary_fraction={args.primary_dataset_fraction:.3f} "
+            f"samples_per_epoch={samples_per_epoch}",
+            flush=True,
+        )
+    else:
+        dataset = primary_dataset
     loader = DataLoader(
         dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=sampler is None,
+        sampler=sampler,
         drop_last=True,
         num_workers=args.num_workers,
         generator=torch.Generator().manual_seed(args.seed),
