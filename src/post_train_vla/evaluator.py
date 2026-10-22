@@ -88,7 +88,8 @@ def _append_jsonl(path: pathlib.Path, value: dict) -> None:
 
 
 def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = None) -> dict:
-    from libero.libero import benchmark
+    import torch
+    from libero.libero import benchmark, get_libero_path
 
     if config.suite not in MAX_STEPS:
         raise ValueError(f"Unknown suite {config.suite!r}; choose from {sorted(MAX_STEPS)}")
@@ -113,7 +114,15 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
             raise ValueError(f"task_id={task_id} is outside [0, {suite.n_tasks})")
         task = suite.get_task(task_id)
         prompt = str(task.language)
-        initial_states = suite.get_task_init_states(task_id)
+        # LIBERO init-state files are trusted benchmark artifacts containing
+        # NumPy arrays. PyTorch 2.6 changed torch.load's default to
+        # weights_only=True, so load them explicitly in compatibility mode.
+        initial_states_path = (
+            pathlib.Path(get_libero_path("init_states"))
+            / task.problem_folder
+            / task.init_states_file
+        )
+        initial_states = torch.load(initial_states_path, weights_only=False)
         episode_end = config.episode_offset + config.episodes_per_task
         if episode_end > len(initial_states):
             raise ValueError(
