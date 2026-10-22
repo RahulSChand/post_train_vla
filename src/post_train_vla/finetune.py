@@ -19,7 +19,7 @@ from types import SimpleNamespace
 import numpy as np
 import safetensors.torch
 import torch
-from torch.utils.data import ConcatDataset, DataLoader, Dataset, WeightedRandomSampler
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, Sampler, WeightedRandomSampler
 
 from post_train_vla.models import Pi0, Pi0Config
 from post_train_vla.torch_policy import find_norm_stats
@@ -119,6 +119,10 @@ class _LocalLeRobotDataset(Dataset):
         self._episodes = [
             json.loads(line) for line in (self.root / "meta" / "episodes.jsonl").read_text().splitlines()
         ]
+        self._episode_indices = [
+            int(episode.get("episode_index", position))
+            for position, episode in enumerate(self._episodes)
+        ]
         self._starts = []
         total = 0
         for episode in self._episodes:
@@ -140,12 +144,13 @@ class _LocalLeRobotDataset(Dataset):
     def __len__(self) -> int:
         return self._length
 
-    def _table_for_episode(self, episode_index: int):
-        if self._cached_episode != episode_index:
+    def _table_for_episode(self, episode_position: int):
+        if self._cached_episode != episode_position:
+            episode_index = self._episode_indices[episode_position]
             chunk = episode_index // self.chunks_size
             relative = self.data_path.format(episode_chunk=chunk, episode_index=episode_index)
             self._cached_table = self._parquet.read_table(self.root / relative)
-            self._cached_episode = episode_index
+            self._cached_episode = episode_position
         return self._cached_table
 
     @staticmethod
@@ -289,6 +294,39 @@ class _CorrectionNpzDataset(Dataset):
             "task_index": task_index,
             "prompt": episode["prompt"],
         }
+
+
+class ExactBalancedReplaySampler(Sampler[int]):
+    """Alternate primary and replay samples for exact 50/50 optimizer batches."""
+
+    def __init__(self, primary_length: int, replay_length: int, num_samples: int, seed: int) -> None:
+        if min(primary_length, replay_length) < 1:
+            raise ValueError("Balanced replay datasets must be non-empty")
+        if num_samples < 2 or num_samples % 2:
+            raise ValueError("Exact balanced replay requires a positive even sample count")
+        self.primary_length = primary_length
+        self.replay_length = replay_length
+        self.num_samples = num_samples
+        self.seed = seed
+
+    @staticmethod
+    def _draw(length: int, count: int, generator: torch.Generator) -> list[int]:
+        values = []
+        while len(values) < count:
+            values.extend(torch.randperm(length, generator=generator).tolist())
+        return values[:count]
+
+    def __iter__(self):
+        generator = torch.Generator().manual_seed(self.seed)
+        per_source = self.num_samples // 2
+        primary = self._draw(self.primary_length, per_source, generator)
+        replay = self._draw(self.replay_length, per_source, generator)
+        for primary_index, replay_index in zip(primary, replay, strict=True):
+            yield primary_index
+            yield self.primary_length + replay_index
+
+    def __len__(self) -> int:
+        return self.num_samples
 
 
 def save_checkpoint(
@@ -534,6 +572,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Number of weighted samples per epoch (default: combined dataset length)",
     )
+    parser.add_argument(
+        "--exact-balanced-replay",
+        action="store_true",
+        help="Alternate primary/replay samples exactly; requires a 0.5 primary fraction.",
+    )
     parser.add_argument("--output-dir", type=pathlib.Path, required=True)
     parser.add_argument(
         "--steps",
@@ -665,6 +708,10 @@ def main() -> None:
         raise ValueError("--primary-dataset-fraction must be strictly between zero and one")
     if args.samples_per_epoch is not None and args.samples_per_epoch < 1:
         raise ValueError("--samples-per-epoch must be positive")
+    if args.exact_balanced_replay and not args.replay_dataset_repo:
+        raise ValueError("--exact-balanced-replay requires --replay-dataset-repo")
+    if args.exact_balanced_replay and args.primary_dataset_fraction != 0.5:
+        raise ValueError("--exact-balanced-replay requires --primary-dataset-fraction 0.5")
     if args.lora and (args.lora_paligemma_rank < 1 or args.lora_action_expert_rank < 1):
         raise ValueError("LoRA ranks must be positive")
     if args.eval_every < 0 or args.eval_episodes < 1:
@@ -741,25 +788,30 @@ def main() -> None:
     if args.replay_dataset_repo:
         replay_dataset = LeRobotLiberoDataset(args.replay_dataset_repo, config.action_horizon)
         dataset = ConcatDataset((primary_dataset, replay_dataset))
-        primary_weight = args.primary_dataset_fraction / len(primary_dataset)
-        replay_weight = (1.0 - args.primary_dataset_fraction) / len(replay_dataset)
-        weights = torch.cat(
-            (
-                torch.full((len(primary_dataset),), primary_weight, dtype=torch.double),
-                torch.full((len(replay_dataset),), replay_weight, dtype=torch.double),
-            )
-        )
         samples_per_epoch = args.samples_per_epoch or len(dataset)
-        sampler = WeightedRandomSampler(
-            weights,
-            num_samples=samples_per_epoch,
-            replacement=True,
-            generator=torch.Generator().manual_seed(args.seed),
-        )
+        if args.exact_balanced_replay:
+            sampler = ExactBalancedReplaySampler(
+                len(primary_dataset), len(replay_dataset), samples_per_epoch, args.seed
+            )
+        else:
+            primary_weight = args.primary_dataset_fraction / len(primary_dataset)
+            replay_weight = (1.0 - args.primary_dataset_fraction) / len(replay_dataset)
+            weights = torch.cat(
+                (
+                    torch.full((len(primary_dataset),), primary_weight, dtype=torch.double),
+                    torch.full((len(replay_dataset),), replay_weight, dtype=torch.double),
+                )
+            )
+            sampler = WeightedRandomSampler(
+                weights,
+                num_samples=samples_per_epoch,
+                replacement=True,
+                generator=torch.Generator().manual_seed(args.seed),
+            )
         print(
             f"primary_frames={len(primary_dataset)} replay_frames={len(replay_dataset)} "
             f"primary_fraction={args.primary_dataset_fraction:.3f} "
-            f"samples_per_epoch={samples_per_epoch}",
+            f"samples_per_epoch={samples_per_epoch} exact_balanced={args.exact_balanced_replay}",
             flush=True,
         )
     else:
