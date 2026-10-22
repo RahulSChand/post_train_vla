@@ -1,0 +1,21 @@
+checkpoint: /workspace/artifacts/pi05-libero-pytorch
+tokenizer: /workspace/src/post_train_vla/assets/paligemma_tokenizer.model
+dataset_repo: /workspace/data/correction_ablation_sets/S96
+output_dir: /workspace/results/pi05-dagger-s96-full-seed42
+
+steps: 1212
+batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 1.0e-5
+optimizer: paged_adamw_8bit
+save_every: 1212
+seed: 42
+num_workers: 0
+device: cuda
+
+pi05: true
+lora: false
+gradient_checkpointing: true
+train_only: true
+save_optimizer: false
+no_wandb: true
