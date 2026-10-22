@@ -154,6 +154,12 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
                         if config.save_video:
                             frames.append(policy_observation["observation/image"])
                         if chunker.empty():
+                            policy_observation["policy_noise_seed"] = (
+                                config.seed * 1_000_000_000
+                                + task_id * 1_000_000
+                                + episode_index * 10_000
+                                + inference_calls
+                            )
                             inference_started = time.monotonic()
                             response = policy.infer(policy_observation)
                             inference_ms.append((time.monotonic() - inference_started) * 1000.0)
@@ -177,6 +183,7 @@ def evaluate(policy: Policy, config: EvalConfig, policy_metadata: dict | None = 
                     "task": prompt,
                     "episode_index": episode_index,
                     "seed": config.seed,
+                    "policy_noise_seed_scheme": "base*1e9+task*1e6+episode*1e4+inference_index",
                     "success": success,
                     "policy_steps": policy_steps,
                     "inference_calls": inference_calls,
